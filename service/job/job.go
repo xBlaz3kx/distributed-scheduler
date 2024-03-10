@@ -7,8 +7,8 @@ import (
 	"gopkg.in/guregu/null.v4"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/model"
-	"github.com/GLCharge/distributed-scheduler/store"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
+	"github.com/xBlaz3kx/distributed-scheduler/store"
 )
 
 // Service is a struct that contains a store and a logger.

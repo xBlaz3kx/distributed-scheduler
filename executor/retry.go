@@ -2,8 +2,8 @@ package executor
 
 import (
 	"context"
-	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 )
 
 // RetryExecutor struct encapsulates an executor and adds retry functionality

@@ -2,10 +2,10 @@ package runner
 
 import (
 	"context"
-	"github.com/GLCharge/distributed-scheduler/executor"
-	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/GLCharge/otelzap"
 	"github.com/google/uuid"
+	"github.com/xBlaz3kx/distributed-scheduler/executor"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 	"go.uber.org/zap"
 	"sync"
 	"testing"

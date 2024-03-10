@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"github.com/GLCharge/distributed-scheduler/foundation/database/dbmigrate"
-	"github.com/GLCharge/distributed-scheduler/foundation/docker"
 	"github.com/jmoiron/sqlx"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database/dbmigrate"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/docker"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

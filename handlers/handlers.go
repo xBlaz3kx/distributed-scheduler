@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"github.com/GLCharge/distributed-scheduler/service/job"
-	"github.com/GLCharge/distributed-scheduler/store/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
+	"github.com/xBlaz3kx/distributed-scheduler/service/job"
+	"github.com/xBlaz3kx/distributed-scheduler/store/postgres"
 )
 
 // APIMuxConfig contains all the mandatory systems required by handlers.

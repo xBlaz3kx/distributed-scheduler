@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GLCharge/distributed-scheduler/model"
-	jobService "github.com/GLCharge/distributed-scheduler/service/job"
 	"github.com/gin-gonic/gin"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
+	jobService "github.com/xBlaz3kx/distributed-scheduler/service/job"
 )
 
 func JobsRoutesV1(router *gin.Engine, jobsHandler *Jobs) {

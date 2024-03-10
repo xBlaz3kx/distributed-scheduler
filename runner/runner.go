@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/executor"
-	"github.com/GLCharge/distributed-scheduler/model"
+	"github.com/xBlaz3kx/distributed-scheduler/executor"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 )
 
 type Runner struct {

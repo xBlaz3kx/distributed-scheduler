@@ -3,8 +3,8 @@ package executor
 import (
 	"context"
 	"errors"
-	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 	"testing"
 )
 

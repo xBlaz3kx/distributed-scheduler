@@ -9,10 +9,10 @@ import (
 	"gopkg.in/guregu/null.v4"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/model"
-	"github.com/GLCharge/distributed-scheduler/store"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
+	"github.com/xBlaz3kx/distributed-scheduler/store"
 )
 
 type pgStore struct {

@@ -1,8 +1,8 @@
 package executor
 
 import (
-	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 	"net/http"
 	"testing"
 )

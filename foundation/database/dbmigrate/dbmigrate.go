@@ -6,11 +6,11 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/GLCharge/distributed-scheduler/foundation/database"
 	"github.com/ardanlabs/darwin/v3"
 	"github.com/ardanlabs/darwin/v3/dialects/postgres"
 	"github.com/ardanlabs/darwin/v3/drivers/generic"
 	"github.com/jmoiron/sqlx"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
 )
 
 var (

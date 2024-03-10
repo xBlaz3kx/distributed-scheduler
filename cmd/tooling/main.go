@@ -1,6 +1,6 @@
 package main
 
-import "github.com/GLCharge/distributed-scheduler/cmd/tooling/cmd"
+import "github.com/xBlaz3kx/distributed-scheduler/cmd/tooling/cmd"
 
 func main() {
 	cmd.Execute()

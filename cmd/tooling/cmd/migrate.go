@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"github.com/GLCharge/distributed-scheduler/foundation/database/dbmigrate"
 	"github.com/spf13/cobra"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database/dbmigrate"
 	"time"
 )
 

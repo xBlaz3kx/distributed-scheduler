@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"github.com/GLCharge/distributed-scheduler/docs"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/xBlaz3kx/distributed-scheduler/docs"
 )
 
 type OpenApiConfig struct {

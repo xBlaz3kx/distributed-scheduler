@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"github.com/GLCharge/distributed-scheduler/foundation/logger"
-	"github.com/GLCharge/distributed-scheduler/handlers"
 	"github.com/ardanlabs/conf/v3"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
+	"github.com/xBlaz3kx/distributed-scheduler/foundation/logger"
+	"github.com/xBlaz3kx/distributed-scheduler/handlers"
 	"go.uber.org/zap"
 )
 

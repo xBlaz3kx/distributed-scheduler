@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/google/uuid"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 	"gopkg.in/guregu/null.v4"
 )
 

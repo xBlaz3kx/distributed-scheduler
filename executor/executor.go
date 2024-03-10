@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GLCharge/distributed-scheduler/model"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 )
 
 type hTTPExecutor struct {

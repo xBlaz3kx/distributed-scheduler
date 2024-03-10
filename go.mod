@@ -2,6 +2,10 @@ module github.com/xBlaz3kx/distributed-scheduler
 
 go 1.20
 
+replace (
+	github.com/GLCharge/otelzap v0.0.0-20230904131944-57dc7c9994a9 => github.com/xBlaz3kx/otelzap v0.0.0-20230904131944-57dc7c9994a9
+)
+
 require (
 	github.com/GLCharge/otelzap v0.0.0-20230904131944-57dc7c9994a9
 	github.com/ardanlabs/darwin/v3 v3.3.1

@@ -2,7 +2,7 @@ package executor
 
 import (
 	"fmt"
-	"github.com/GLCharge/distributed-scheduler/model"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 )
 
 type Factory interface {

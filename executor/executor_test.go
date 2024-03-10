@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"github.com/GLCharge/distributed-scheduler/model"
+	"github.com/xBlaz3kx/distributed-scheduler/model"
 	"gopkg.in/guregu/null.v4"
 	"net/http"
 	"net/http/httptest"
