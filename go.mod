@@ -1,4 +1,4 @@
-module github.com/GLCharge/distributed-scheduler
+module github.com/xBlaz3kx/distributed-scheduler
 
 go 1.20
 
