@@ -1,35 +1,35 @@
-name: "Unit Test"
+name: "Testing"
 
 on:
   push:
     branches:
       - main
-      - staging
     paths-ignore:
+      - 'docs/**'
       - 'documentation/**'
       - '*.md'
       - 'docker-compose.yaml'
       - 'docker-compose.dev.yaml'
+      - 'makefile'
   pull_request:
+    types: [ opened,synchronize ]
     branches:
       - main
-      - staging
 
 jobs:
   test:
     name: Run Go Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20
-
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
 
-      - name: Get dependencies
-        run: go mod download
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.20
 
-      - name: Run tests
-        run: go test -v ./...
+      - name: Get dependencies and run tests
+        run: |
+          go mod download
+          go test -v ./...
