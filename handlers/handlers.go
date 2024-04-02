@@ -4,16 +4,15 @@ import (
 	"context"
 	"github.com/GLCharge/otelzap"
 	ginzap "github.com/gin-contrib/zap"
-	timeout "github.com/vearne/gin-timeout"
-	"go.uber.org/zap"
-	"net/http"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	timeout "github.com/vearne/gin-timeout"
 	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
 	"github.com/xBlaz3kx/distributed-scheduler/service/job"
 	"github.com/xBlaz3kx/distributed-scheduler/store/postgres"
+	"go.uber.org/zap"
+	"net/http"
+	"time"
 )
 
 // APIMuxConfig contains all the mandatory systems required by handlers.
