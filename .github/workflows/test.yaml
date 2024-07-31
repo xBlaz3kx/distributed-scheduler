@@ -1,35 +1,31 @@
-name: "Testing"
-
+name: "Tests"
 on:
-  push:
+  pull_request:
+    types: [ opened, synchronize ]
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
+      - '.run/**'
+      - '.vscode/**'
       - 'documentation/**'
       - '*.md'
-      - 'docker-compose.yaml'
-      - 'docker-compose.dev.yaml'
-      - 'makefile'
-  pull_request:
-    types: [ opened,synchronize ]
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: Run Go Unit Tests
+  # Run unit tests
+  tests:
+    name: "Run unit tests"
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code into the Go module directory
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.20
 
-      - name: Get dependencies and run tests
+      - name: Install dependencies and run tests
         run: |
           go mod download
           go test -v ./...
