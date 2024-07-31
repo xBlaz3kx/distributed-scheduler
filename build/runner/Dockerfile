@@ -1,6 +1,12 @@
 # Use an official GoLang runtime as the base image
 FROM golang:1.20-alpine as builder
 
+ENV GOCACHE=/root/.cache/go-build
+ENV GOMODCACHE=/root/.cache/go-build
+ENV GO111MODULE=on
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+
 # Set the working directory inside the container
 WORKDIR /app
 
@@ -8,7 +14,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download
+RUN --mount=type=cache,target=/root/.cache/go-build go mod download
 
 # Verify dependencies
 RUN go mod verify
@@ -22,7 +28,7 @@ RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
 RUN swag init -g handlers/doc.go
 
 # Build the Go application
-RUN go build -o bin/runner cmd/runner/main.go
+RUN --mount=type=cache,target="/root/.cache/go-build" go build -o bin/runner cmd/runner/main.go
 
 # Use an official Alpine Linux runtime as a base image
 FROM alpine:latest
