@@ -9,6 +9,8 @@ import (
 	"net"
 	"os/exec"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Container tracks information about the docker container started for tests.
@@ -33,7 +35,11 @@ func StartContainer(image string, port string, args ...string) (*Container, erro
 	id := out.String()[:12]
 	hostIP, hostPort, err := extractIPPort(id, port)
 	if err != nil {
-		StopContainer(id)
+		err := StopContainer(id)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not stop container")
+		}
+
 		return nil, fmt.Errorf("could not extract ip/port: %w", err)
 	}
 

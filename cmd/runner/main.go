@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GLCharge/otelzap"
-	"github.com/xBlaz3kx/distributed-scheduler/handlers"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/GLCharge/otelzap"
+	"github.com/xBlaz3kx/distributed-scheduler/handlers"
 
 	"github.com/ardanlabs/conf/v3"
 	"github.com/xBlaz3kx/distributed-scheduler/executor"
@@ -31,11 +32,13 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer log.Sync()
+	defer func(log *otelzap.Logger) {
+		_ = log.Sync()
+	}(log)
 
 	if err := run(log); err != nil {
 		log.Error("startup", zap.Error(err))
-		log.Sync()
+		_ = log.Sync()
 		os.Exit(1)
 	}
 }
@@ -115,7 +118,7 @@ func run(log *otelzap.Logger) error {
 	}
 	defer func() {
 		log.Info("shutdown", zap.String("status", "stopping database support"), zap.String("host", cfg.DB.Host))
-		db.Close()
+		_ = db.Close()
 	}()
 
 	// -------------------------------------------------------------------------
@@ -170,6 +173,7 @@ func run(log *otelzap.Logger) error {
 	// -------------------------------------------------------------------------
 	// Shutdown
 
+	//nolint:all
 	select {
 	case sig := <-shutdown:
 		log.Info("shutdown", zap.String("status", "shutdown started"), zap.Any("signal", sig))

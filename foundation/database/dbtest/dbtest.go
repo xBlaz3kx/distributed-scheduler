@@ -38,7 +38,7 @@ func StartDB() (*docker.Container, error) {
 
 // StopDB stops a running database instance.
 func StopDB(c *docker.Container) {
-	docker.StopContainer(c.ID)
+	_ = docker.StopContainer(c.ID)
 	fmt.Println("Stopped:", c.ID)
 }
 
@@ -86,7 +86,7 @@ func NewTest(t *testing.T, c *docker.Container) *Test {
 	if _, err := dbM.ExecContext(context.Background(), "CREATE DATABASE "+dbName); err != nil {
 		t.Fatalf("creating database %s: %v", dbName, err)
 	}
-	dbM.Close()
+	_ = dbM.Close()
 
 	t.Log("Database ready")
 
@@ -128,11 +128,11 @@ func NewTest(t *testing.T, c *docker.Container) *Test {
 	// with the database.
 	teardown := func() {
 		t.Helper()
-		db.Close()
+		_ = db.Close()
 
-		log.Sync()
+		_ = log.Sync()
 
-		writer.Flush()
+		_ = writer.Flush()
 		fmt.Println("******************** LOGS ********************")
 		fmt.Print(buf.String())
 		fmt.Println("******************** LOGS ********************")
