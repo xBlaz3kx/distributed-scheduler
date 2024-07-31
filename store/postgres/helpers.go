@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+
 	"github.com/GLCharge/otelzap"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"

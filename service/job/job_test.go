@@ -3,6 +3,10 @@ package job
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
+	"testing"
+	"time"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
@@ -11,9 +15,6 @@ import (
 	"github.com/xBlaz3kx/distributed-scheduler/model"
 	"github.com/xBlaz3kx/distributed-scheduler/store/postgres"
 	"gopkg.in/guregu/null.v4"
-	"runtime/debug"
-	"testing"
-	"time"
 )
 
 var c *docker.Container
@@ -120,7 +121,7 @@ func crud(t *testing.T) {
 	// Get jobs
 	// -------------------------------------------------------------------------
 
-	jobs, err := jobService.ListJobs(ctx, 10, 0)
+	jobs, err := jobService.ListJobs(ctx, 10, 0, []string{})
 	if err != nil {
 		t.Fatalf("Should be able to list jobs: %s", err)
 	}
@@ -132,7 +133,7 @@ func crud(t *testing.T) {
 	// Get jobs with limit
 	// -------------------------------------------------------------------------
 
-	jobs, err = jobService.ListJobs(ctx, 1, 0)
+	jobs, err = jobService.ListJobs(ctx, 1, 0, []string{})
 	if err != nil {
 		t.Fatalf("Should be able to list jobs: %s", err)
 	}

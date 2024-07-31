@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLCharge/otelzap"
 	"github.com/jmoiron/sqlx"
 	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
 	"github.com/xBlaz3kx/distributed-scheduler/foundation/database/dbmigrate"
@@ -46,7 +47,7 @@ func StopDB(c *docker.Container) {
 // Test owns state for running and shutting down tests.
 type Test struct {
 	DB       *sqlx.DB
-	Log      *zap.SugaredLogger
+	Log      *otelzap.Logger
 	Teardown func()
 	t        *testing.T
 }
@@ -114,10 +115,10 @@ func NewTest(t *testing.T, c *docker.Container) *Test {
 	var buf bytes.Buffer
 	encoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 	writer := bufio.NewWriter(&buf)
-	log := zap.New(
+	log := otelzap.New(zap.New(
 		zapcore.NewCore(encoder, zapcore.AddSync(writer), zapcore.DebugLevel),
 		zap.WithCaller(true),
-	).Sugar()
+	))
 
 	t.Log("Ready for testing ...")
 
