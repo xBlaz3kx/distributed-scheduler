@@ -4,6 +4,9 @@ on:
     branches:
       - main
     paths-ignore:
+      - './.github/workflows/lint.yaml'
+      - './.github/workflows/test.yaml'
+      - './.github/dependabot.yaml'
       - 'docs/**'
       - 'documentation/**'
       - '*.md'
