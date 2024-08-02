@@ -15,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
-	github.com/vearne/gin-timeout v0.1.7
+	github.com/vearne/gin-timeout v0.2.0
 )
 
 require (
