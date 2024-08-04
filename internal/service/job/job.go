@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/model"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/store"
+	"go.uber.org/zap"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -28,6 +29,7 @@ func NewService(store store.Storer, log *otelzap.Logger) *Service {
 // CreateJob creates a new job using the given job create request and returns the created job.
 // If the job create request is invalid, an error is returned.
 func (s *Service) CreateJob(ctx context.Context, jobCreate *model.JobCreate) (*model.Job, error) {
+	s.log.Info("Creating job", zap.Any("job", jobCreate))
 
 	// Convert the job create request to a job
 	job := jobCreate.ToJob()
@@ -48,11 +50,14 @@ func (s *Service) CreateJob(ctx context.Context, jobCreate *model.JobCreate) (*m
 
 // GetJob returns the job with the given ID.
 func (s *Service) GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error) {
+	s.log.Info("Getting a job", zap.Any("id", id))
 	return s.store.GetJob(ctx, id)
 }
 
 // UpdateJob updates the given job.
 func (s *Service) UpdateJob(ctx context.Context, jobID uuid.UUID, jobUpdate model.JobUpdate) (*model.Job, error) {
+	s.log.Info("Updating a job", zap.Any("id", jobID))
+
 	// get the job from the store
 	job, err := s.store.GetJob(ctx, jobID)
 	if err != nil {
@@ -78,25 +83,25 @@ func (s *Service) UpdateJob(ctx context.Context, jobID uuid.UUID, jobUpdate mode
 
 // DeleteJob deletes the job with the given ID.
 func (s *Service) DeleteJob(ctx context.Context, id uuid.UUID) error {
-	// Implement deleting a specific job using the store
-
+	s.log.Info("Deleting a job", zap.Any("id", id))
 	return s.store.DeleteJob(ctx, id)
 }
 
 // ListJobs returns a list of jobs with the given limit and offset.
 func (s *Service) ListJobs(ctx context.Context, limit, offset uint64, tags []string) ([]model.Job, error) {
-	// Implement listing jobs using the store
-
+	s.log.Info("Getting jobs")
 	return s.store.ListJobs(ctx, limit, offset, tags)
 }
 
 // GetJobsToRun returns a list of jobs that should be run at the given time.
 func (s *Service) GetJobsToRun(ctx context.Context, at time.Time, lockedUntil time.Time, instanceID string, limit uint) ([]*model.Job, error) {
+	s.log.Info("Getting jobs to run", zap.Any("at", at), zap.Any("lockedUntil", lockedUntil), zap.Any("instanceID", instanceID), zap.Any("limit", limit))
 
 	return s.store.GetJobsToRun(ctx, at, lockedUntil, instanceID, limit)
 }
 
 func (s *Service) FinishJobExecution(ctx context.Context, job *model.Job, startTime, stopTime time.Time, err error) error {
+	s.log.Info("Finishing job execution", zap.Any("job", job.ID), zap.Any("startTime", startTime), zap.Any("stopTime", stopTime), zap.Any("err", err))
 
 	// Update the job execution
 	job.SetNextRunTime()
@@ -124,7 +129,7 @@ func (s *Service) FinishJobExecution(ctx context.Context, job *model.Job, startT
 }
 
 func (s *Service) GetJobExecutions(ctx context.Context, id uuid.UUID, failedOnly bool, limit uint64, offset uint64) ([]*model.JobExecution, error) {
+	s.log.Info("Getting job executions", zap.Any("id", id), zap.Any("failedOnly", failedOnly), zap.Any("limit", limit), zap.Any("offset", offset))
 
 	return s.store.GetJobExecutions(ctx, id, failedOnly, limit, offset)
-
 }

@@ -11,13 +11,13 @@ import (
 
 // Config is the required properties to use the database.
 type Config struct {
-	User         string
-	Password     string
-	Host         string
-	Name         string
-	MaxIdleConns int
-	MaxOpenConns int
-	DisableTLS   bool `conf:"default:false"`
+	User         string `conf:"default:scheduler"`
+	Password     string `conf:"default:scheduler,mask"`
+	Host         string `conf:"default:localhost:5436"`
+	Name         string `conf:"default:scheduler"`
+	MaxIdleConns int    `conf:"default:3"`
+	MaxOpenConns int    `conf:"default:2"`
+	DisableTLS   bool   `conf:"default:true"`
 }
 
 // Open knows how to open a database connection based on the configuration.
