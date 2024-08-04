@@ -8,7 +8,6 @@ require (
 	github.com/GLCharge/otelzap v0.0.0-20230904131944-57dc7c9994a9
 	github.com/ardanlabs/darwin/v3 v3.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/gin-contrib/zap v1.1.3
 	github.com/google/go-cmp v0.6.0
 	github.com/lib/pq v1.10.9
 	github.com/samber/lo v1.46.0
@@ -16,7 +15,6 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
-	github.com/vearne/gin-timeout v0.2.0
 	github.com/xBlaz3kx/DevX v0.0.0-20240731212815-b4dca2816bed
 )
 
@@ -31,6 +29,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fvbock/endless v0.0.0-20170109170031-447134032cb6 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.4 // indirect
+	github.com/gin-contrib/zap v1.1.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -64,6 +63,7 @@ require (
 	github.com/swaggo/swag v1.16.3 // indirect
 	github.com/tavsec/gin-healthcheck v1.6.2 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelutil v0.2.3 // indirect
+	github.com/vearne/gin-timeout v0.2.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
@@ -91,7 +91,7 @@ require (
 )
 
 require (
-	github.com/ardanlabs/conf/v3 v3.1.5
+	github.com/ardanlabs/conf/v3 v3.1.7
 	github.com/bytedance/sonic v1.11.9 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
