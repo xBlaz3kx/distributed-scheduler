@@ -8,7 +8,7 @@ require (
 	github.com/GLCharge/otelzap v0.0.0-20230904131944-57dc7c9994a9
 	github.com/ardanlabs/darwin/v3 v3.3.1
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/gin-contrib/zap v1.1.1
+	github.com/gin-contrib/zap v1.1.3
 	github.com/google/go-cmp v0.6.0
 	github.com/lib/pq v1.10.9
 	github.com/samber/lo v1.46.0
