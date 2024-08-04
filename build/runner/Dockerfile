@@ -1,5 +1,5 @@
 # Use an official GoLang runtime as the base image
-FROM golang:1.20-alpine as builder
+FROM golang:1.20-alpine AS builder
 
 ENV GOCACHE=/root/.cache/go-build
 ENV GOMODCACHE=/root/.cache/go-build
@@ -38,6 +38,8 @@ WORKDIR /app
 
 # Copy the binary from the builder stage to the current stage
 COPY --from=builder /app/bin/runner /app/runner
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=3  CMD wget -qO- http://localhost:8000/health || exit 1
 
 # set command to run when starting the container
 CMD ["/app/runner"]

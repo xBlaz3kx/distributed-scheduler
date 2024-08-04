@@ -29,11 +29,6 @@ services:
     depends_on:
       - postgres
       - migration
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   runner:
     build:
