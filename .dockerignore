@@ -4,4 +4,7 @@
 .dockerignore
 .gitignore
 docker-compose.dev.yml
+docker-compose.yml
+docker-compose.local-dev.yml.yml
 docs
+*.md
