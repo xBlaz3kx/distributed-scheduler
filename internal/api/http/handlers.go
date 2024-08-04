@@ -1,19 +1,11 @@
 package http
 
 import (
-	"context"
-	"net/http"
-	"time"
-
 	"github.com/GLCharge/otelzap"
-	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	timeout "github.com/vearne/gin-timeout"
-	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/service/job"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/store/postgres"
-	"go.uber.org/zap"
 )
 
 // APIMuxConfig contains all the mandatory systems required by handlers.
@@ -24,24 +16,7 @@ type APIMuxConfig struct {
 }
 
 // Api constructs a http.Handler with all application routes defined.
-func Api(cfg APIMuxConfig) http.Handler {
-
-	// Create a new Gin router
-	router := gin.New()
-
-	// Use Gin's built-in logger and recovery middleware
-	router.Use(
-		ginzap.RecoveryWithZap(cfg.Log, true),
-		ginzap.Ginzap(cfg.Log, time.RFC3339, true),
-		timeout.Timeout(timeout.WithErrorHttpCode(http.StatusServiceUnavailable)),
-	)
-
-	// ==================
-	// Health Check
-
-	// Define a route for the health check endpoint
-	router.GET("/health", healthCheck(cfg))
-
+func Api(router *gin.Engine, cfg APIMuxConfig) {
 	// ==================
 	// OpenAPI (will only mount if enabled)
 	OpenApiRoute(cfg.OpenApi, router)
@@ -60,50 +35,4 @@ func Api(cfg APIMuxConfig) http.Handler {
 
 	// Define a group of routes for the jobs endpoint
 	JobsRoutesV1(router, jobsHandler)
-
-	// Return the router as a http.Handler
-	return router
-}
-
-// Runner API
-func RunnerAPI(cfg APIMuxConfig) http.Handler {
-	// Create a new Gin router
-	router := gin.New()
-
-	// Use Gin's built-in logger and recovery middleware
-	router.Use(
-		ginzap.RecoveryWithZap(cfg.Log, true),
-		ginzap.Ginzap(cfg.Log, time.RFC3339, true),
-		timeout.Timeout(timeout.WithErrorHttpCode(http.StatusServiceUnavailable)),
-	)
-
-	// ==================
-	// Health Check
-
-	// Define a route for the health check endpoint
-	router.GET("/health", healthCheck(cfg))
-	//_ = gin_healthcheck.New(router, config.Config{}, nil)
-
-	return router
-}
-
-// healthCheck returns a Gin handler function for the health check endpoint
-func healthCheck(cfg APIMuxConfig) gin.HandlerFunc {
-
-	return func(c *gin.Context) {
-
-		// Check the database connection
-		if err := database.StatusCheck(context.Background(), cfg.DB); err != nil {
-			cfg.Log.Error("database status check failed", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status": "database ping failed",
-			})
-			return
-		}
-
-		// Return a JSON response with a status of "OK"
-		c.JSON(http.StatusOK, gin.H{
-			"status": "OK",
-		})
-	}
 }

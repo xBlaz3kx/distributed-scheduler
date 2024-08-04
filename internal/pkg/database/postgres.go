@@ -80,3 +80,19 @@ func StatusCheck(ctx context.Context, db *sqlx.DB) error {
 	var tmp bool
 	return db.QueryRowContext(ctx, q).Scan(&tmp)
 }
+
+type HealthcheckAdapter struct {
+	DB *sqlx.DB
+}
+
+func NewHealthChecker(db *sqlx.DB) *HealthcheckAdapter {
+	return &HealthcheckAdapter{DB: db}
+}
+
+func (h *HealthcheckAdapter) Pass() bool {
+	return StatusCheck(context.Background(), h.DB) == nil
+}
+
+func (h *HealthcheckAdapter) Name() string {
+	return "postgres"
+}

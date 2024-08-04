@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/GLCharge/otelzap"
 	"github.com/ardanlabs/conf/v3"
+	"github.com/spf13/cobra"
+	devxHttp "github.com/xBlaz3kx/DevX/http"
+	"github.com/xBlaz3kx/DevX/observability"
 	api "github.com/xBlaz3kx/distributed-scheduler/internal/api/http"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
@@ -20,49 +21,56 @@ import (
 
 var build = "develop"
 
-func main() {
-	logLevel := os.Getenv("MANAGER_LOG_LEVEL")
-	log, err := logger.New(logLevel)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer log.Sync()
+var serviceInfo = observability.ServiceInfo{
+	Name:    "manager",
+	Version: build,
+}
 
-	if err := run(log); err != nil {
-		log.Error("startup error", zap.Error(err))
-		os.Exit(1)
+type config struct {
+	conf.Version
+	Web struct {
+		ReadTimeout     time.Duration `conf:"default:5s"`
+		WriteTimeout    time.Duration `conf:"default:10s"`
+		IdleTimeout     time.Duration `conf:"default:120s"`
+		ShutdownTimeout time.Duration `conf:"default:20s"`
+		APIHost         string        `conf:"default:0.0.0.0:8000"`
+	}
+	DB      database.Config
+	OpenAPI struct {
+		Scheme string `conf:"default:http"`
+		Enable bool   `conf:"default:true"`
+		Host   string `conf:"default:localhost:8000"`
 	}
 }
 
-func run(log *otelzap.Logger) error {
+var rootCmd = &cobra.Command{
+	Use:   "scheduler",
+	Short: "Scheduler manager",
+	Run:   runCmd,
+}
 
-	// -------------------------------------------------------------------------
+func main() {
+	cobra.OnInitialize(logger.SetupLogging)
+	err := rootCmd.Execute()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func runCmd(cmd *cobra.Command, args []string) {
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	obsConfig := observability.Config{}
+	obs, err := observability.NewObservability(ctx, serviceInfo, obsConfig)
+	if err != nil {
+		otelzap.L().Fatal("failed to initialize observability", zap.Error(err))
+	}
+
+	log := obs.Log()
+
 	// Configuration
-	cfg := struct {
-		conf.Version
-		Web struct {
-			ReadTimeout     time.Duration `conf:"default:5s"`
-			WriteTimeout    time.Duration `conf:"default:10s"`
-			IdleTimeout     time.Duration `conf:"default:120s"`
-			ShutdownTimeout time.Duration `conf:"default:20s"`
-			APIHost         string        `conf:"default:0.0.0.0:8000"`
-		}
-		DB struct {
-			User         string `conf:"default:scheduler"`
-			Password     string `conf:"default:scheduler,mask"`
-			Host         string `conf:"default:localhost:5436"`
-			Name         string `conf:"default:scheduler"`
-			MaxIdleConns int    `conf:"default:3"`
-			MaxOpenConns int    `conf:"default:2"`
-			DisableTLS   bool   `conf:"default:true"`
-		}
-		OpenAPI struct {
-			Scheme string `conf:"default:http"`
-			Enable bool   `conf:"default:true"`
-			Host   string `conf:"default:localhost:8000"`
-		}
-	}{
+	cfg := config{
 		Version: conf.Version{
 			Build: build,
 			Desc:  "copyright information here",
@@ -74,28 +82,24 @@ func run(log *otelzap.Logger) error {
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {
 			fmt.Println(help)
-			return nil
+			return
 		}
-		return fmt.Errorf("parsing config: %w", err)
+		return
 	}
 
-	// -------------------------------------------------------------------------
 	// App Starting
-
 	log.Info("starting service", zap.String("version", build))
 	defer log.Info("shutdown complete")
 
 	out, err := conf.String(&cfg)
 	if err != nil {
-		return fmt.Errorf("generating config for output: %w", err)
+		return
 	}
+
 	log.Info("startup", zap.String("config", out))
 
-	// -------------------------------------------------------------------------
 	// Database Support
-
 	log.Info("startup", zap.String("status", "initializing database support"), zap.String("host", cfg.DB.Host))
-
 	db, err := database.Open(database.Config{
 		User:         cfg.DB.User,
 		Password:     cfg.DB.Password,
@@ -106,23 +110,18 @@ func run(log *otelzap.Logger) error {
 		DisableTLS:   cfg.DB.DisableTLS,
 	})
 	if err != nil {
-		return fmt.Errorf("connecting to db: %w", err)
+		return
 	}
 
 	defer func() {
 		log.Info("shutdown", zap.String("status", "stopping database support"), zap.String("host", cfg.DB.Host))
-		db.Close()
+		_ = db.Close()
 	}()
 
-	// -------------------------------------------------------------------------
-	// Start API Service
+	httpCfg := devxHttp.Configuration{Address: cfg.Web.APIHost}
+	httpServer := devxHttp.NewServer(httpCfg, obs)
 
-	log.Info("startup", zap.String("status", "initializing Management API support"))
-
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
-	apiMux := api.Api(api.APIMuxConfig{
+	api.Api(httpServer.Router(), api.APIMuxConfig{
 		Log: log,
 		DB:  db,
 		OpenApi: api.OpenApiConfig{
@@ -132,40 +131,19 @@ func run(log *otelzap.Logger) error {
 		},
 	})
 
-	api := http.Server{
-		Addr:         cfg.Web.APIHost,
-		Handler:      apiMux,
-		ReadTimeout:  cfg.Web.ReadTimeout,
-		WriteTimeout: cfg.Web.WriteTimeout,
-		IdleTimeout:  cfg.Web.IdleTimeout,
-		ErrorLog:     zap.NewStdLog(log.Logger),
-	}
-
-	serverErrors := make(chan error, 1)
-
 	go func() {
-		log.Info("startup", zap.String("status", "api router started"), zap.String("host", api.Addr))
-		serverErrors <- api.ListenAndServe()
+		log.Info("Starting HTTP server", zap.String("host", httpCfg.Address))
+		databaseCheck := database.NewHealthChecker(db)
+		httpServer.Run(databaseCheck)
 	}()
 
-	// -------------------------------------------------------------------------
-	// Shutdown
+	// Start API Service
+	log.Info("startup", zap.String("status", "initializing Management API support"))
 
+	// Shutdown
 	select {
-	case err := <-serverErrors:
-		return fmt.Errorf("server error: %w", err)
-	case sig := <-shutdown:
+	case sig := <-ctx.Done():
 		log.Info("shutdown", zap.String("status", "shutdown started"), zap.Any("signal", sig))
 		defer log.Info("shutdown", zap.String("status", "shutdown complete"), zap.Any("signal", sig))
-
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
-		defer cancel()
-
-		if err := api.Shutdown(ctx); err != nil {
-			api.Close()
-			return fmt.Errorf("could not stop server gracefully: %w", err)
-		}
 	}
-
-	return nil
 }

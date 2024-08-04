@@ -3,11 +3,21 @@
 package logger
 
 import (
+	"os"
+
 	"github.com/GLCharge/otelzap"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
 )
+
+func SetupLogging() {
+	logLevel := viper.GetString("log.level")
+	logger, err := New(logLevel)
+	if err == nil {
+		otelzap.ReplaceGlobals(logger)
+	}
+}
 
 // New constructs a Sugared Logger that writes to stdout and
 // provides human-readable timestamps.

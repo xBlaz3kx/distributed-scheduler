@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/GLCharge/otelzap"
 	"github.com/ardanlabs/conf/v3"
-	api "github.com/xBlaz3kx/distributed-scheduler/internal/api/http"
+	"github.com/spf13/cobra"
+	devxHttp "github.com/xBlaz3kx/DevX/http"
+	"github.com/xBlaz3kx/DevX/observability"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/executor"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
@@ -24,25 +25,12 @@ import (
 
 var build = "develop"
 
-func main() {
-	logLevel := os.Getenv("RUNNER_LOG_LEVEL")
-	log, err := logger.New(logLevel)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer func(log *otelzap.Logger) {
-		_ = log.Sync()
-	}(log)
-
-	if err := run(log); err != nil {
-		log.Error("startup", zap.Error(err))
-		_ = log.Sync()
-		os.Exit(1)
-	}
+var serviceInfo = observability.ServiceInfo{
+	Name:    "manager",
+	Version: build,
 }
 
-type Configuration struct {
+type config struct {
 	conf.Version
 	Web struct {
 		ReadTimeout     time.Duration `conf:"default:5s"`
@@ -58,12 +46,34 @@ type Configuration struct {
 	MaxJobLockTime    time.Duration `conf:"default:1m"`
 }
 
-func run(log *otelzap.Logger) error {
+var rootCmd = &cobra.Command{
+	Use:   "runner",
+	Short: "Scheduler runner",
+	Run:   runCmd,
+}
 
-	// -------------------------------------------------------------------------
-	// Configuration
+func main() {
+	cobra.OnInitialize(logger.SetupLogging)
+	err := rootCmd.Execute()
+	if err != nil {
+		panic(err)
+	}
+}
 
-	cfg := Configuration{
+func runCmd(cmd *cobra.Command, args []string) {
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	obsConfig := observability.Config{}
+	obs, err := observability.NewObservability(ctx, serviceInfo, obsConfig)
+	if err != nil {
+		otelzap.L().Fatal("failed to initialize observability", zap.Error(err))
+	}
+
+	log := obs.Log()
+
+	// config
+	cfg := config{
 		Version: conf.Version{
 			Build: build,
 			Desc:  "copyright information here",
@@ -75,28 +85,24 @@ func run(log *otelzap.Logger) error {
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {
 			fmt.Println(help)
-			return nil
+			return
 		}
-		return fmt.Errorf("parsing config: %w", err)
+		return
 	}
 
-	// -------------------------------------------------------------------------
 	// App Starting
-
 	log.Info("starting service", zap.String("version", build))
 	defer log.Info("shutdown complete")
 
 	out, err := conf.String(&cfg)
 	if err != nil {
-		return fmt.Errorf("generating config for output: %w", err)
+		log.Fatal("parsing config", zap.Error(err))
 	}
-	log.Info("startup", zap.String("config", out))
 
-	// -------------------------------------------------------------------------
-	// Database Support
+	log.Info("Using config", zap.Any("config", out))
 
+	// Database
 	log.Info("startup", zap.String("status", "initializing database support"), zap.String("host", cfg.DB.Host))
-
 	db, err := database.Open(database.Config{
 		User:         cfg.DB.User,
 		Password:     cfg.DB.Password,
@@ -107,20 +113,15 @@ func run(log *otelzap.Logger) error {
 		DisableTLS:   cfg.DB.DisableTLS,
 	})
 	if err != nil {
-		return fmt.Errorf("connecting to db: %w", err)
+		log.Fatal("Unable to establish DB connection", zap.Error(err))
 	}
 	defer func() {
-		log.Info("shutdown", zap.String("status", "stopping database support"), zap.String("host", cfg.DB.Host))
+		log.Info("closing database connection")
 		_ = db.Close()
 	}()
 
-	// -------------------------------------------------------------------------
 	// Start Runner Service
-
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
-	log.Info("startup", zap.String("status", "initializing runner"))
+	log.Info("Starting runner service")
 
 	store := postgres.New(db, log)
 
@@ -137,47 +138,25 @@ func run(log *otelzap.Logger) error {
 		MaxConcurrentJobs: cfg.MaxConcurrentJobs,
 		JobLockDuration:   cfg.MaxJobLockTime,
 	})
-
 	runner.Start()
 
-	//
-	// API
-	apiMux := api.RunnerAPI(api.APIMuxConfig{
-		Log: log,
-		DB:  db,
-	})
-
-	api := http.Server{
-		Addr:         cfg.Web.APIHost,
-		Handler:      apiMux,
-		ReadTimeout:  cfg.Web.ReadTimeout,
-		WriteTimeout: cfg.Web.WriteTimeout,
-		IdleTimeout:  cfg.Web.IdleTimeout,
-		ErrorLog:     zap.NewStdLog(log.Logger),
-	}
-
-	serverErrors := make(chan error, 1)
-
+	httpServer := devxHttp.NewServer(devxHttp.Configuration{Address: cfg.Web.APIHost}, observability.NewNoopObservability())
 	go func() {
-		log.Info("startup", zap.String("status", "api router started"), zap.String("host", api.Addr))
-		serverErrors <- api.ListenAndServe()
+		log.Info("Started HTTP server", zap.String("host", cfg.Web.APIHost))
+		databaseCheck := database.NewHealthChecker(db)
+		httpServer.Run(databaseCheck)
 	}()
-
-	// -------------------------------------------------------------------------
-	// Shutdown
 
 	//nolint:all
 	select {
-	case sig := <-shutdown:
-		log.Info("shutdown", zap.String("status", "shutdown started"), zap.Any("signal", sig))
-		defer log.Info("shutdown", zap.String("status", "shutdown complete"), zap.Any("signal", sig))
+	case _ = <-ctx.Done():
+		log.Info("shutdown", zap.String("status", "shutdown started"))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		// stop the runner
 		runner.Stop(ctx)
+		log.Info("shutdown", zap.String("status", "shutdown complete"))
 	}
-
-	return nil
 }
