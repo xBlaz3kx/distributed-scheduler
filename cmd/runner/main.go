@@ -11,15 +11,14 @@ import (
 	"time"
 
 	"github.com/GLCharge/otelzap"
-	"github.com/xBlaz3kx/distributed-scheduler/handlers"
-
 	"github.com/ardanlabs/conf/v3"
-	"github.com/xBlaz3kx/distributed-scheduler/executor"
-	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
-	"github.com/xBlaz3kx/distributed-scheduler/foundation/logger"
-	"github.com/xBlaz3kx/distributed-scheduler/runner"
-	"github.com/xBlaz3kx/distributed-scheduler/service/job"
-	"github.com/xBlaz3kx/distributed-scheduler/store/postgres"
+	api "github.com/xBlaz3kx/distributed-scheduler/internal/api/http"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/executor"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/runner"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/service/job"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/store/postgres"
 	"go.uber.org/zap"
 )
 
@@ -43,34 +42,28 @@ func main() {
 	}
 }
 
+type Configuration struct {
+	conf.Version
+	Web struct {
+		ReadTimeout     time.Duration `conf:"default:5s"`
+		WriteTimeout    time.Duration `conf:"default:10s"`
+		IdleTimeout     time.Duration `conf:"default:120s"`
+		ShutdownTimeout time.Duration `conf:"default:20s"`
+		APIHost         string        `conf:"default:0.0.0.0:8000"`
+	}
+	DB                database.Config
+	ID                string        `conf:"default:instance1"`
+	Interval          time.Duration `conf:"default:10s"`
+	MaxConcurrentJobs int           `conf:"default:100"`
+	MaxJobLockTime    time.Duration `conf:"default:1m"`
+}
+
 func run(log *otelzap.Logger) error {
 
 	// -------------------------------------------------------------------------
 	// Configuration
 
-	cfg := struct {
-		conf.Version
-		Web struct {
-			ReadTimeout     time.Duration `conf:"default:5s"`
-			WriteTimeout    time.Duration `conf:"default:10s"`
-			IdleTimeout     time.Duration `conf:"default:120s"`
-			ShutdownTimeout time.Duration `conf:"default:20s"`
-			APIHost         string        `conf:"default:0.0.0.0:8000"`
-		}
-		DB struct {
-			User         string `conf:"default:scheduler"`
-			Password     string `conf:"default:scheduler,mask"`
-			Host         string `conf:"default:localhost:5436"`
-			Name         string `conf:"default:scheduler"`
-			MaxIdleConns int    `conf:"default:3"`
-			MaxOpenConns int    `conf:"default:2"`
-			DisableTLS   bool   `conf:"default:true"`
-		}
-		ID                string        `conf:"default:instance1"`
-		Interval          time.Duration `conf:"default:10s"`
-		MaxConcurrentJobs int           `conf:"default:100"`
-		MaxJobLockTime    time.Duration `conf:"default:1m"`
-	}{
+	cfg := Configuration{
 		Version: conf.Version{
 			Build: build,
 			Desc:  "copyright information here",
@@ -135,7 +128,7 @@ func run(log *otelzap.Logger) error {
 
 	executorFactory := executor.NewFactory(&http.Client{Timeout: 30 * time.Second})
 
-	runnner := runner.New(runner.Config{
+	runner := runner.New(runner.Config{
 		JobService:        jobService,
 		Log:               log,
 		ExecutorFactory:   executorFactory,
@@ -145,11 +138,11 @@ func run(log *otelzap.Logger) error {
 		JobLockDuration:   cfg.MaxJobLockTime,
 	})
 
-	runnner.Start()
+	runner.Start()
 
 	//
 	// API
-	apiMux := handlers.RunnerAPI(handlers.APIMuxConfig{
+	apiMux := api.RunnerAPI(api.APIMuxConfig{
 		Log: log,
 		DB:  db,
 	})
@@ -183,7 +176,7 @@ func run(log *otelzap.Logger) error {
 		defer cancel()
 
 		// stop the runner
-		runnner.Stop(ctx)
+		runner.Stop(ctx)
 	}
 
 	return nil

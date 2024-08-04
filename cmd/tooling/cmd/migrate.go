@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
-	"github.com/xBlaz3kx/distributed-scheduler/foundation/database/dbmigrate"
 	"time"
+
+	"github.com/GLCharge/otelzap"
+	"github.com/spf13/cobra"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database/dbmigrate"
 )
 
 var migrateCmd = &cobra.Command{
@@ -29,9 +30,10 @@ func init() {
 }
 
 func migrateRun(cmd *cobra.Command, args []string) {
+	logger := otelzap.L().Sugar()
 	db, err := database.Open(dbConfig)
 	if err != nil {
-		fmt.Printf("open database: %v", err)
+		logger.Fatalf("unable to create database connection: %v", err)
 		return
 	}
 	defer db.Close()
@@ -40,9 +42,9 @@ func migrateRun(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	if err := dbmigrate.Migrate(ctx, db); err != nil {
-		fmt.Printf("migrate database: %v", err)
+		logger.Fatalf("unable to migrate the database: %v", err)
 		return
 	}
 
-	fmt.Println("migrations complete")
+	logger.Info("Database migrations complete!")
 }

@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GLCharge/otelzap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/GLCharge/otelzap"
 	"github.com/ardanlabs/conf/v3"
-	"github.com/xBlaz3kx/distributed-scheduler/foundation/database"
-	"github.com/xBlaz3kx/distributed-scheduler/foundation/logger"
-	"github.com/xBlaz3kx/distributed-scheduler/handlers"
+	api "github.com/xBlaz3kx/distributed-scheduler/internal/api/http"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +31,6 @@ func main() {
 
 	if err := run(log); err != nil {
 		log.Error("startup error", zap.Error(err))
-		log.Sync()
 		os.Exit(1)
 	}
 }
@@ -123,10 +122,10 @@ func run(log *otelzap.Logger) error {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-	apiMux := handlers.APIMux(handlers.APIMuxConfig{
+	apiMux := api.Api(api.APIMuxConfig{
 		Log: log,
 		DB:  db,
-		OpenApi: handlers.OpenApiConfig{
+		OpenApi: api.OpenApiConfig{
 			Enabled: cfg.OpenAPI.Enable,
 			Scheme:  cfg.OpenAPI.Scheme,
 			Host:    cfg.OpenAPI.Host,
