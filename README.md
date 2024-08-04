@@ -14,11 +14,11 @@ that execute at specified times in the future.
 
 ## Roadmap
 
-- [] **Limit number of job executions**: Limit the number of times a job can be executed.
-- [] **Job Dependencies**: Allow jobs to depend on other jobs.
-- [] **Job Priorities**: Allow jobs to be assigned priorities.
-- [] **Job Retries**: Allow jobs to be retried if they fail.
-- []  **Job callbacks**: Allow jobs to call a specified endpoint after completion.
+- [ ] **Limit number of job executions**: Limit the number of times a job can be executed.
+- [ ] **Job Dependencies**: Allow jobs to depend on other jobs.
+- [ ] **Job Priorities**: Allow jobs to be assigned priorities.
+- [ ] **Job Retries**: Allow jobs to be retried if they fail.
+- [ ]  **Job callbacks**: Allow jobs to call a specified endpoint after completion.
 
 ## Quickstart
 
@@ -27,7 +27,7 @@ You must have Docker and Docker Compose installed on your machine to run the sys
 1. Clone the repository:
 
     ```bash
-    git clone https://gitub.com/xBlaz3kx/distributed-scheduler.git
+    git clone https://github.com/xBlaz3kx/distributed-scheduler.git
     
     cd distributed-scheduler
     ```
@@ -41,7 +41,7 @@ You must have Docker and Docker Compose installed on your machine to run the sys
 ## Configuration
 
 Check out our
-detailed [Local Development Guide](./documentation/development.md), [Configuration Guide](./documentation/configuration.md).
+detailed [Local Development Guide](./documentation/development.md) and [Configuration Guide](./documentation/configuration.md).
 
 ## Architecture
 
