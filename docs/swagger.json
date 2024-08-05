@@ -55,13 +55,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -99,13 +99,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -143,13 +143,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -194,13 +194,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -233,13 +233,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -298,13 +298,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/http.ErrorResponse"
                         }
                     }
                 }
@@ -312,7 +312,7 @@
         }
     },
     "definitions": {
-        "handlers.ErrorResponse": {
+        "http.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -336,7 +336,7 @@
                     ]
                 },
                 "connection": {
-                    "description": "e.g., \"amqp://guest:guest@localhost:5672/\"",
+                    "description": "Todo encode the connection string!",
                     "type": "string"
                 },
                 "content_type": {
@@ -409,7 +409,7 @@
             "type": "object",
             "properties": {
                 "auth": {
-                    "description": "e.g., {\"type\": \"basic\", \"username\": \"foo\", \"password\": \"bar\"}",
+                    "description": "Todo encode the auth!",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.Auth"
@@ -447,6 +447,9 @@
         "model.Job": {
             "type": "object",
             "properties": {
+                "allowed_failed_runs": {
+                    "type": "integer"
+                },
                 "amqp_job": {
                     "$ref": "#/definitions/model.AMQPJob"
                 },
@@ -471,10 +474,14 @@
                     "description": "when the job is scheduled to run next (can be null if the job is not scheduled to run again)",
                     "type": "string"
                 },
+                "num_runs": {
+                    "type": "integer"
+                },
                 "status": {
                     "$ref": "#/definitions/model.JobStatus"
                 },
                 "tags": {
+                    "description": "Custom user tags that can be used to filter jobs",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -541,6 +548,12 @@
                 "job_id": {
                     "type": "string"
                 },
+                "number_of_executions": {
+                    "type": "integer"
+                },
+                "number_of_retries": {
+                    "type": "integer"
+                },
                 "start_time": {
                     "type": "string"
                 },
@@ -553,10 +566,20 @@
             "type": "string",
             "enum": [
                 "RUNNING",
+                "SCHEDULED",
+                "CANCELLED",
+                "EXECUTED",
+                "COMPLETED",
+                "AWAITING_NEXT_EXECUTION",
                 "STOPPED"
             ],
             "x-enum-varnames": [
                 "JobStatusRunning",
+                "JobStatusScheduled",
+                "JobStatusCancelled",
+                "JobStatusExecuted",
+                "JobStatusCompleted",
+                "JobStatusAwaitingNextExecution",
                 "JobStatusStopped"
             ]
         },

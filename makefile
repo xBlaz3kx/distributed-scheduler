@@ -56,4 +56,4 @@ get/runner/flags:
 .PHONY: docs
 docs:
 	@echo "Generating docs..."
-	@swag init -g handlers/doc.go
+	@swag init -g internal/api/http/doc.go

@@ -1,6 +1,6 @@
 basePath: /v1
 definitions:
-  handlers.ErrorResponse:
+  http.ErrorResponse:
     properties:
       error:
         type: string
@@ -15,7 +15,7 @@ definitions:
         - $ref: '#/definitions/model.BodyEncoding'
         description: e.g., null, "base64"
       connection:
-        description: e.g., "amqp://guest:guest@localhost:5672/"
+        description: Todo encode the connection string!
         type: string
       content_type:
         description: e.g., "text/plain"
@@ -68,7 +68,7 @@ definitions:
       auth:
         allOf:
         - $ref: '#/definitions/model.Auth'
-        description: 'e.g., {"type": "basic", "username": "foo", "password": "bar"}'
+        description: Todo encode the auth!
       body:
         description: 'e.g., "{\"hello\": \"world\"}"'
         type: string
@@ -91,6 +91,8 @@ definitions:
     type: object
   model.Job:
     properties:
+      allowed_failed_runs:
+        type: integer
       amqp_job:
         $ref: '#/definitions/model.AMQPJob'
       created_at:
@@ -109,9 +111,12 @@ definitions:
         description: when the job is scheduled to run next (can be null if the job
           is not scheduled to run again)
         type: string
+      num_runs:
+        type: integer
       status:
         $ref: '#/definitions/model.JobStatus'
       tags:
+        description: Custom user tags that can be used to filter jobs
         items:
           type: string
         type: array
@@ -153,6 +158,10 @@ definitions:
         type: integer
       job_id:
         type: string
+      number_of_executions:
+        type: integer
+      number_of_retries:
+        type: integer
       start_time:
         type: string
       success:
@@ -161,10 +170,20 @@ definitions:
   model.JobStatus:
     enum:
     - RUNNING
+    - SCHEDULED
+    - CANCELLED
+    - EXECUTED
+    - COMPLETED
+    - AWAITING_NEXT_EXECUTION
     - STOPPED
     type: string
     x-enum-varnames:
     - JobStatusRunning
+    - JobStatusScheduled
+    - JobStatusCancelled
+    - JobStatusExecuted
+    - JobStatusCompleted
+    - JobStatusAwaitingNextExecution
     - JobStatusStopped
   model.JobType:
     enum:
@@ -228,11 +247,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: List jobs
       tags:
       - jobs
@@ -257,11 +276,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Create a job
       tags:
       - jobs
@@ -284,11 +303,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Delete a job
       tags:
       - jobs
@@ -312,11 +331,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get a job
       tags:
       - jobs
@@ -346,11 +365,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Update a job
       tags:
       - jobs
@@ -390,11 +409,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/http.ErrorResponse'
       summary: Get job executions
       tags:
       - jobs

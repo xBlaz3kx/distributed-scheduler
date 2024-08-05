@@ -25,7 +25,7 @@ COPY . .
 # install go swaggo, used to generate swagger docs
 RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
 # build docs
-RUN swag init -g handlers/doc.go
+RUN swag init -g internal/api/http/doc.go
 
 # Build the Go application
 RUN --mount=type=cache,target="/root/.cache/go-build" go build -o bin/manager cmd/manager/main.go
