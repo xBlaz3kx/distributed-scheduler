@@ -1,6 +1,10 @@
 package model
 
-import error2 "github.com/xBlaz3kx/distributed-scheduler/internal/pkg/error"
+import (
+	"net/url"
+
+	error2 "github.com/xBlaz3kx/distributed-scheduler/internal/pkg/error"
+)
 
 type BodyEncoding string
 
@@ -21,7 +25,6 @@ func (be *BodyEncoding) Valid() bool {
 }
 
 type AMQPJob struct {
-	// Todo encode the connection string!
 	Connection   string                 `json:"connection"`    // e.g., "amqp://guest:guest@localhost:5672/"
 	Exchange     string                 `json:"exchange"`      // e.g., "my_exchange"
 	RoutingKey   string                 `json:"routing_key"`   // e.g., "my_routing_key"
@@ -37,9 +40,9 @@ func (amqpJob *AMQPJob) Validate() error {
 		return error2.ErrAMQPJobNotDefined
 	}
 
-	// Todo validate URL
-	if amqpJob.Connection == "" {
-		return error2.ErrEmptyHTTPJobURL
+	_, err := url.Parse(amqpJob.Connection)
+	if err != nil {
+		return error2.ErrAMQPConnectionInvalid
 	}
 
 	if amqpJob.Exchange == "" {
