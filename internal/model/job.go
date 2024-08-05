@@ -48,41 +48,6 @@ func (js JobStatus) Valid() bool {
 	}
 }
 
-type AuthType string
-
-const (
-	AuthTypeNone   AuthType = "none"
-	AuthTypeBasic  AuthType = "basic"
-	AuthTypeBearer AuthType = "bearer"
-)
-
-func (at AuthType) Valid() bool {
-	switch at {
-	case AuthTypeNone, AuthTypeBasic, AuthTypeBearer:
-		return true
-	default:
-		return false
-	}
-}
-
-type BodyEncoding string
-
-const (
-	BodyEncodingBase64 BodyEncoding = "base64"
-)
-
-func (be *BodyEncoding) Valid() bool {
-	if be == nil {
-		return true
-	}
-	switch *be {
-	case BodyEncodingBase64:
-		return true
-	default:
-		return false
-	}
-}
-
 // swagger:model Job
 type Job struct {
 	ID     uuid.UUID `json:"id"`
@@ -152,34 +117,6 @@ func (j *Job) ApplyUpdate(update JobUpdate) {
 	j.SetInitialRunTime()
 }
 
-type HTTPJob struct {
-	URL                string            `json:"url"`                       // e.g., "https://example.com"
-	Method             string            `json:"method"`                    // e.g., "GET", "POST", "PUT", "PATCH", "DELETE"
-	Headers            map[string]string `json:"headers"`                   // e.g., {"Content-Type": "application/json"}
-	Body               null.String       `json:"body" swaggertype:"string"` // e.g., "{\"hello\": \"world\"}"
-	ValidResponseCodes []int             `json:"valid_response_codes"`      // e.g., [200, 201, 202]
-	// Todo encode the auth!
-	Auth Auth `json:"auth"` // e.g., {"type": "basic", "username": "foo", "password": "bar"}
-}
-
-type AMQPJob struct {
-	// Todo encode the connection string!
-	Connection   string                 `json:"connection"`    // e.g., "amqp://guest:guest@localhost:5672/"
-	Exchange     string                 `json:"exchange"`      // e.g., "my_exchange"
-	RoutingKey   string                 `json:"routing_key"`   // e.g., "my_routing_key"
-	Headers      map[string]interface{} `json:"headers"`       // e.g., {"x-delay": 10000}
-	Body         string                 `json:"body"`          // e.g., "Hello, world!"
-	BodyEncoding *BodyEncoding          `json:"body_encoding"` // e.g., null, "base64"
-	ContentType  string                 `json:"content_type"`  // e.g., "text/plain"
-}
-
-type Auth struct {
-	Type        AuthType    `json:"type"`                                        // e.g., "none", "basic", "bearer"
-	Username    null.String `json:"username,omitempty" swaggertype:"string"`     // for "basic"
-	Password    null.String `json:"password,omitempty" swaggertype:"string"`     // for "basic"
-	BearerToken null.String `json:"bearer_token,omitempty" swaggertype:"string"` // for "bearer"
-}
-
 // Validate validates a Job struct.
 func (j *Job) Validate() error {
 	if j.ID == uuid.Nil {
@@ -235,27 +172,6 @@ func (j *Job) Validate() error {
 	return nil
 }
 
-// Validate validates an HTTPJob struct.
-func (httpJob *HTTPJob) Validate() error {
-	if httpJob == nil {
-		return error2.ErrHTTPJobNotDefined
-	}
-
-	if httpJob.URL == "" {
-		return error2.ErrEmptyHTTPJobURL
-	}
-
-	if httpJob.Method == "" {
-		return error2.ErrEmptyHTTPJobMethod
-	}
-
-	if err := httpJob.Auth.Validate(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (j *Job) SetNextRunTime() {
 	// if the job is a recurring job, set NextRun to the next time the job should run
 	if j.CronSchedule.Valid {
@@ -288,58 +204,6 @@ func (j *Job) SetInitialRunTime() {
 	if j.ExecuteAt.Valid {
 		j.NextRun = null.TimeFrom(j.ExecuteAt.Time)
 	}
-}
-
-// Validate validates an AMQPJob struct.
-func (amqpJob *AMQPJob) Validate() error {
-	if amqpJob == nil {
-		return error2.ErrAMQPJobNotDefined
-	}
-
-	// Todo validate URL
-	if amqpJob.Connection == "" {
-		return error2.ErrEmptyHTTPJobURL
-	}
-
-	if amqpJob.Exchange == "" {
-		return error2.ErrEmptyExchange
-	}
-
-	if amqpJob.RoutingKey == "" {
-		return error2.ErrEmptyRoutingKey
-	}
-
-	if !amqpJob.BodyEncoding.Valid() {
-		return error2.ErrInvalidBodyEncoding
-	}
-
-	return nil
-}
-
-func (auth *Auth) Validate() error {
-	if auth == nil {
-		return error2.ErrAuthMethodNotDefined
-	}
-
-	if !auth.Type.Valid() {
-		return error2.ErrInvalidAuthType
-	}
-
-	if auth.Type == AuthTypeBasic {
-		if !auth.Username.Valid || auth.Username.String == "" {
-			return error2.ErrEmptyUsername
-		}
-
-		if !auth.Password.Valid || auth.Password.String == "" {
-			return error2.ErrEmptyPassword
-		}
-	}
-
-	if auth.Type == AuthTypeBearer && (!auth.BearerToken.Valid || auth.BearerToken.String == "") {
-		return error2.ErrEmptyBearerToken
-	}
-
-	return nil
 }
 
 type JobCreate struct {
