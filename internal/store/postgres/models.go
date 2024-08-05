@@ -14,8 +14,8 @@ import (
 
 var encryptor security.Encryptor
 
-func init() {
-	encryptor = security.NewEncryptor("yep59f$4txwrr5^z")
+func SetEncryptor(e security.Encryptor) {
+	encryptor = e
 }
 
 type jobDB struct {

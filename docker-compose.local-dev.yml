@@ -29,6 +29,7 @@ services:
       - MANAGER_DB_USER=scheduler
       - MANAGER_DB_PASS=scheduler
       - MANAGER_DB_DISABLETLS=true
+      - MANAGER_STORAGE_ENCRYPTION_KEY=ishouldbechanged
     depends_on:
       - postgres
       - migration
@@ -44,6 +45,7 @@ services:
       - RUNNER_DB_USER=scheduler
       - RUNNER_DB_PASS=scheduler
       - RUNNER_DB_DISABLETLS=true
+      - RUNNER_STORAGE_ENCRYPTION_KEY=ishouldbechanged
     depends_on:
       - postgres
       - migration
@@ -57,6 +59,8 @@ services:
       POSTGRES_DB: scheduler
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   rabbitmq:
     image: rabbitmq:3-management

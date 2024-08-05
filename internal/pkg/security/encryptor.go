@@ -40,7 +40,7 @@ func NewEncryptor(secretKey string) Encryptor {
 
 func NewEncryptorFromEnv() Encryptor {
 	// Load the secret key from a secure location.
-	secretKey := viper.GetString("storage_encryption_key")
+	secretKey := viper.GetString("storage.encryption.key")
 
 	aes, err := aes.NewCipher([]byte(secretKey))
 	if err != nil {

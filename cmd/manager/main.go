@@ -11,11 +11,15 @@ import (
 	"github.com/GLCharge/otelzap"
 	"github.com/ardanlabs/conf/v3"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	devxCfg "github.com/xBlaz3kx/DevX/configuration"
 	devxHttp "github.com/xBlaz3kx/DevX/http"
 	"github.com/xBlaz3kx/DevX/observability"
 	api "github.com/xBlaz3kx/distributed-scheduler/internal/api/http"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/security"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/store/postgres"
 	"go.uber.org/zap"
 )
 
@@ -46,11 +50,20 @@ type config struct {
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "Scheduler manager",
-	Run:   runCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.SetDefault("storage.encryption.key", "ishouldreallybechanged")
+		devxCfg.InitConfig("", "./config", ".")
+
+		postgres.SetEncryptor(security.NewEncryptorFromEnv())
+	},
+	Run: runCmd,
 }
 
 func main() {
-	cobra.OnInitialize(logger.SetupLogging)
+	cobra.OnInitialize(func() {
+		logger.SetupLogging()
+		devxCfg.SetupEnv("manager")
+	})
 	err := rootCmd.Execute()
 	if err != nil {
 		panic(err)
