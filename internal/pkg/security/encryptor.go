@@ -3,6 +3,7 @@ package security
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/base64"
 	"math/rand"
 
 	"github.com/pkg/errors"
@@ -72,7 +73,7 @@ func (e *encryptor) Encrypt(plaintext string) (*string, error) {
 	// is enough to separate it from the ciphertext.
 	ciphertext := e.aead.Seal(nonce, nonce, []byte(plaintext), nil)
 
-	return lo.ToPtr(string(ciphertext)), nil
+	return lo.ToPtr(base64.StdEncoding.EncodeToString(ciphertext)), nil
 }
 
 func (e *encryptor) Decrypt(ciphertext string) (*string, error) {
@@ -82,7 +83,12 @@ func (e *encryptor) Decrypt(ciphertext string) (*string, error) {
 	nonceSize := e.aead.NonceSize()
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 
-	plaintext, err := e.aead.Open(nil, []byte(nonce), []byte(ciphertext), nil)
+	decoded, err := base64.StdEncoding.DecodeString(ciphertext)
+	if err != nil {
+		return nil, err
+	}
+
+	plaintext, err := e.aead.Open([]byte(ciphertext), []byte(nonce), decoded, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decrypt ciphertext")
 	}
