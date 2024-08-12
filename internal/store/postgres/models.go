@@ -61,6 +61,7 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			j.HTTPJob.Auth.Password = null.StringFrom(*encryptedPassword)
 		case model.AuthTypeBearer:
 			encryptedToken, err := encryptor.Encrypt(j.HTTPJob.Auth.BearerToken.ValueOrZero())
@@ -80,10 +81,20 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 	}
 
 	if j.AMQPJob != nil {
+
+		// Encrypt the connection url before storing it as it contains login credentials
+		encryptedConnectionUrl, err := encryptor.Encrypt(j.AMQPJob.Connection)
+		if err != nil {
+			return nil, err
+		}
+
+		j.AMQPJob.Connection = *encryptedConnectionUrl
+
 		amqpJob, err := json.Marshal(j.AMQPJob)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal amqp job")
 		}
+
 		dbJ.AMQPJob = amqpJob
 	}
 
@@ -117,13 +128,13 @@ func (j *jobDB) ToJob() (*model.Job, error) {
 			}
 			job.HTTPJob.Auth.Username = null.StringFrom(*decryptedUsername)
 
-			decryptedPassword, err := encryptor.Encrypt(job.HTTPJob.Auth.Password.ValueOrZero())
+			decryptedPassword, err := encryptor.Decrypt(job.HTTPJob.Auth.Password.ValueOrZero())
 			if err != nil {
 				return nil, err
 			}
 			job.HTTPJob.Auth.Password = null.StringFrom(*decryptedPassword)
 		case model.AuthTypeBearer:
-			decryptedToken, err := encryptor.Encrypt(job.HTTPJob.Auth.BearerToken.ValueOrZero())
+			decryptedToken, err := encryptor.Decrypt(job.HTTPJob.Auth.BearerToken.ValueOrZero())
 			if err != nil {
 				return nil, err
 			}
@@ -135,7 +146,15 @@ func (j *jobDB) ToJob() (*model.Job, error) {
 	if err := unmarshalNullableJSON(j.AMQPJob, &job.AMQPJob); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal amqp job")
 	}
-	// todo decrypt
+
+	if job.AMQPJob != nil {
+		decryptedConnectionUrl, err := encryptor.Decrypt(job.AMQPJob.Connection)
+		if err != nil {
+			return nil, err
+		}
+
+		job.AMQPJob.Connection = *decryptedConnectionUrl
+	}
 
 	return job, nil
 }
