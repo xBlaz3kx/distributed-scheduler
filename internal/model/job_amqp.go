@@ -59,3 +59,15 @@ func (amqpJob *AMQPJob) Validate() error {
 
 	return nil
 }
+
+// RemoveCredentials removes the credentials from the AMQPJob struct.
+func (amqpJob *AMQPJob) RemoveCredentials() {
+	connectionUrl, err := url.Parse(amqpJob.Connection)
+	if err != nil {
+		return
+	}
+
+	// Only redact the credentials from the connection URL
+	connectionUrl.User = nil
+	amqpJob.Connection = connectionUrl.String()
+}

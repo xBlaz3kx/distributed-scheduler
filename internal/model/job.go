@@ -65,9 +65,9 @@ type Job struct {
 	UpdatedAt time.Time `json:"updated_at"`
 
 	// when the job is scheduled to run next (can be null if the job is not scheduled to run again)
-	NextRun           null.Time `json:"next_run"`
-	NumberOfRuns      *int      `json:"num_runs"`
-	AllowedFailedRuns *int      `json:"allowed_failed_runs"`
+	NextRun           null.Time `json:"next_run,omitempty"`
+	NumberOfRuns      *int      `json:"num_runs,omitempty"`
+	AllowedFailedRuns *int      `json:"allowed_failed_runs,omitempty"`
 
 	// Custom user tags that can be used to filter jobs
 	Tags []string `json:"tags"`
@@ -170,6 +170,17 @@ func (j *Job) Validate() error {
 	}
 
 	return nil
+}
+
+// RemoveCredentials removes sensitive information from the job, when returning it to the user.
+func (j *Job) RemoveCredentials() {
+	if j.HTTPJob != nil {
+		j.HTTPJob.RemoveCredentials()
+	}
+
+	if j.AMQPJob != nil {
+		j.AMQPJob.RemoveCredentials()
+	}
 }
 
 func (j *Job) SetNextRunTime() {

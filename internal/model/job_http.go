@@ -52,6 +52,12 @@ func (httpJob *HTTPJob) Validate() error {
 	return nil
 }
 
+func (httpJob *HTTPJob) RemoveCredentials() {
+	httpJob.Auth.Username = null.String{}
+	httpJob.Auth.Password = null.String{}
+	httpJob.Auth.BearerToken = null.String{}
+}
+
 type Auth struct {
 	Type        AuthType    `json:"type"`                                        // e.g., "none", "basic", "bearer"
 	Username    null.String `json:"username,omitempty" swaggertype:"string"`     // for "basic"
