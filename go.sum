@@ -23,8 +23,8 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0 h1:axGnT1gRIfimI7gJifB699GoE/oq+F2MU7Dml6nw9rQ=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0/go.mod h1:lvDnEdqiQrp0O42VQGgmlKpxL1AP2+08jFMw88y4klk=
-github.com/ardanlabs/conf/v3 v3.1.5 h1:G6df2AxKnGHAK+ur2p50Ys8Vo1HnKcsvqSj9lxVeczk=
-github.com/ardanlabs/conf/v3 v3.1.5/go.mod h1:zclexWKe0NVj6LHQ8NgDDZ7bQ1spE0KeKPFficdtAjU=
+github.com/ardanlabs/conf/v3 v3.1.8 h1:r0KUV9/Hni5XdeWR2+A1BiedIDnry5CjezoqgJ0rnFQ=
+github.com/ardanlabs/conf/v3 v3.1.8/go.mod h1:OIi6NK95fj8jKFPdZ/UmcPlY37JBg99hdP9o5XmNK9c=
 github.com/ardanlabs/darwin/v3 v3.3.1 h1:tU4nutFgKNH7fFJ98wSj0Zyrsh9a2XltlPz/1AGkIRE=
 github.com/ardanlabs/darwin/v3 v3.3.1/go.mod h1:dnfiwJYj15gfm/2XltdAmLxhK/7h1eFs7rc4yaaXC0A=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
