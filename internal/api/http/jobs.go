@@ -65,8 +65,9 @@ func (j *Jobs) CreateJob() gin.HandlerFunc {
 			return
 		}
 
-		ctx.JSON(http.StatusCreated, job)
+		job.RemoveCredentials()
 
+		ctx.JSON(http.StatusCreated, job)
 	}
 }
 
@@ -105,6 +106,8 @@ func (j *Jobs) UpdateJob() gin.HandlerFunc {
 			return
 		}
 
+		job.RemoveCredentials()
+
 		ctx.JSON(http.StatusOK, job)
 
 	}
@@ -138,8 +141,9 @@ func (j *Jobs) GetJob() gin.HandlerFunc {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, job)
+		job.RemoveCredentials()
 
+		ctx.JSON(http.StatusOK, job)
 	}
 }
 
@@ -200,8 +204,12 @@ func (j *Jobs) ListJobs() gin.HandlerFunc {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, jobs)
+		// Remove credentials from the jobs
+		for i, _ := range jobs {
+			jobs[i].RemoveCredentials()
+		}
 
+		ctx.JSON(http.StatusOK, jobs)
 	}
 }
 

@@ -12,11 +12,14 @@ import (
 	"github.com/GLCharge/otelzap"
 	"github.com/ardanlabs/conf/v3"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	devxCfg "github.com/xBlaz3kx/DevX/configuration"
 	devxHttp "github.com/xBlaz3kx/DevX/http"
 	"github.com/xBlaz3kx/DevX/observability"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/executor"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/security"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/runner"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/service/job"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/store/postgres"
@@ -26,7 +29,7 @@ import (
 var build = "develop"
 
 var serviceInfo = observability.ServiceInfo{
-	Name:    "manager",
+	Name:    "runner",
 	Version: build,
 }
 
@@ -49,11 +52,20 @@ type config struct {
 var rootCmd = &cobra.Command{
 	Use:   "runner",
 	Short: "Scheduler runner",
-	Run:   runCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.SetDefault("storage.encryption.key", "ishouldreallybechanged")
+		devxCfg.InitConfig("", "./config", ".")
+
+		postgres.SetEncryptor(security.NewEncryptorFromEnv())
+	},
+	Run: runCmd,
 }
 
 func main() {
-	cobra.OnInitialize(logger.SetupLogging)
+	cobra.OnInitialize(func() {
+		logger.SetupLogging()
+		devxCfg.SetupEnv("runner")
+	})
 	err := rootCmd.Execute()
 	if err != nil {
 		panic(err)

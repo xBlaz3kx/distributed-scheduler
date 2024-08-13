@@ -8,8 +8,15 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/model"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/security"
 	"gopkg.in/guregu/null.v4"
 )
+
+var encryptor security.Encryptor
+
+func SetEncryptor(e security.Encryptor) {
+	encryptor = e
+}
 
 type jobDB struct {
 	ID           uuid.UUID      `db:"id"`
@@ -41,6 +48,30 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 	}
 
 	if j.HTTPJob != nil {
+		switch j.HTTPJob.Auth.Type {
+		case model.AuthTypeBasic:
+			// Encrypt both the username and password before storing them
+			encryptedUsername, err := encryptor.Encrypt(j.HTTPJob.Auth.Username.ValueOrZero())
+			if err != nil {
+				return nil, err
+			}
+			j.HTTPJob.Auth.Username = null.StringFrom(*encryptedUsername)
+
+			encryptedPassword, err := encryptor.Encrypt(j.HTTPJob.Auth.Password.ValueOrZero())
+			if err != nil {
+				return nil, err
+			}
+
+			j.HTTPJob.Auth.Password = null.StringFrom(*encryptedPassword)
+		case model.AuthTypeBearer:
+			encryptedToken, err := encryptor.Encrypt(j.HTTPJob.Auth.BearerToken.ValueOrZero())
+			if err != nil {
+				return nil, err
+			}
+
+			j.HTTPJob.Auth.BearerToken = null.StringFrom(*encryptedToken)
+		}
+
 		httpJob, err := json.Marshal(j.HTTPJob)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal http job")
@@ -50,10 +81,20 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 	}
 
 	if j.AMQPJob != nil {
+
+		// Encrypt the connection url before storing it as it contains login credentials
+		encryptedConnectionUrl, err := encryptor.Encrypt(j.AMQPJob.Connection)
+		if err != nil {
+			return nil, err
+		}
+
+		j.AMQPJob.Connection = *encryptedConnectionUrl
+
 		amqpJob, err := json.Marshal(j.AMQPJob)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal amqp job")
 		}
+
 		dbJ.AMQPJob = amqpJob
 	}
 
@@ -77,8 +118,42 @@ func (j *jobDB) ToJob() (*model.Job, error) {
 		return nil, errors.Wrap(err, "failed to unmarshal http job")
 	}
 
+	if job.HTTPJob != nil {
+		switch job.HTTPJob.Auth.Type {
+		case model.AuthTypeBasic:
+			// Encrypt both the username and password before storing them
+			decryptedUsername, err := encryptor.Decrypt(job.HTTPJob.Auth.Username.ValueOrZero())
+			if err != nil {
+				return nil, err
+			}
+			job.HTTPJob.Auth.Username = null.StringFrom(*decryptedUsername)
+
+			decryptedPassword, err := encryptor.Decrypt(job.HTTPJob.Auth.Password.ValueOrZero())
+			if err != nil {
+				return nil, err
+			}
+			job.HTTPJob.Auth.Password = null.StringFrom(*decryptedPassword)
+		case model.AuthTypeBearer:
+			decryptedToken, err := encryptor.Decrypt(job.HTTPJob.Auth.BearerToken.ValueOrZero())
+			if err != nil {
+				return nil, err
+			}
+
+			job.HTTPJob.Auth.BearerToken = null.StringFrom(*decryptedToken)
+		}
+	}
+
 	if err := unmarshalNullableJSON(j.AMQPJob, &job.AMQPJob); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal amqp job")
+	}
+
+	if job.AMQPJob != nil {
+		decryptedConnectionUrl, err := encryptor.Decrypt(job.AMQPJob.Connection)
+		if err != nil {
+			return nil, err
+		}
+
+		job.AMQPJob.Connection = *decryptedConnectionUrl
 	}
 
 	return job, nil
