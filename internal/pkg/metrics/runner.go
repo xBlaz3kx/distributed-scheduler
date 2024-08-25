@@ -9,6 +9,15 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+const (
+	jobsTotal       = "scheduler_runner_jobs_total"
+	jobsExecuted    = "scheduler_runner_jobs_executed"
+	jobsFailed      = "scheduler_runner_jobs_failed"
+	jobRetries      = "scheduler_runner_job_retries"
+	jobDuration     = "scheduler_runner_job_duration"
+	jobsInExecution = "scheduler_runner_jobs_in_execution"
+)
+
 // Add attributes: Job Type/Executor, Instance ID, status, numberOfTries
 
 type RunnerMetrics struct {
@@ -34,22 +43,22 @@ func NewRunnerMetrics(config observability.MetricsConfig) *RunnerMetrics {
 
 	meter := otel.GetMeterProvider().Meter("runner")
 
-	jobsTotal, err := meter.Int64Counter("scheduler_runner_jobs_total")
+	jobsTotal, err := meter.Int64Counter(jobsTotal)
 	must(err)
 
-	jobsExecuted, err := meter.Int64Counter("scheduler_runner_jobs_executed")
+	jobsExecuted, err := meter.Int64Counter(jobsExecuted)
 	must(err)
 
-	jobsFailed, err := meter.Int64Counter("scheduler_runner_jobs_failed")
+	jobsFailed, err := meter.Int64Counter(jobsFailed)
 	must(err)
 
-	jobRetries, err := meter.Int64Counter("scheduler_runner_job_retries")
+	jobRetries, err := meter.Int64Counter(jobRetries)
 	must(err)
 
-	jobDuration, err := meter.Float64Histogram("scheduler_runner_job_duration")
+	jobDuration, err := meter.Float64Histogram(jobDuration)
 	must(err)
 
-	jobsInExecution, err := meter.Int64Gauge("scheduler_runner_jobs_in_execution")
+	jobsInExecution, err := meter.Int64Gauge(jobsInExecution)
 	must(err)
 
 	return &RunnerMetrics{
