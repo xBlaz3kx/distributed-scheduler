@@ -8,11 +8,16 @@ import (
 	"github.com/GLCharge/otelzap"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/executor"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/model"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/metrics"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
 type Runner struct {
 	jobService JobService
+
+	// Runner metrics
+	metrics *metrics.RunnerMetrics
 
 	executorFactory executor.Factory
 	ticker          *time.Ticker
@@ -51,6 +56,7 @@ type JobService interface {
 
 type Config struct {
 	JobService      JobService
+	Metrics         *metrics.RunnerMetrics
 	ExecutorFactory executor.Factory
 	Log             *otelzap.Logger
 	InstanceId      string
@@ -65,6 +71,7 @@ func New(cfg Config) *Runner {
 
 	s := &Runner{
 		jobService:        cfg.JobService,
+		metrics:           cfg.Metrics,
 		instanceId:        cfg.InstanceId,
 		log:               cfg.Log,
 		ticker:            time.NewTicker(cfg.Interval),
@@ -159,12 +166,21 @@ func (s *Runner) runJobs() {
 		return
 	}
 
+	numJobs := len(jobs)
+	attr := attribute.String("instance", s.instanceId)
+
+	// Increase gauge metric for number of running jobs
+	s.metrics.IncreaseJobsInExecution(ctx, numJobs, attr)
+
 	s.log.Debug("Running jobs", zap.Int("count", len(jobs)))
 
 	// Run each job
 	for _, j := range jobs {
 		s.executeJob(j)
 	}
+
+	// Decrease gauge metric for number of running jobs
+	s.metrics.DecreaseJobsInExecution(ctx, numJobs, attr)
 }
 
 func (s *Runner) executeJob(job *model.Job) {
@@ -191,6 +207,22 @@ func (s *Runner) executeJob(job *model.Job) {
 		err = jobExecutor.Execute(s.ctx, job)
 
 		stopTime := time.Now()
+
+		attrs := []attribute.KeyValue{
+			attribute.String("job_type", string(job.Type)),
+			attribute.String("instance", s.instanceId),
+		}
+		// Record the job duration
+		s.metrics.RecordJobDuration(
+			s.ctx,
+			time.Since(startTime).Seconds(),
+			attrs...,
+		)
+
+		// Increment the job retries metric if the job failed
+		if err != nil {
+			s.metrics.IncreaseFailedJobCount(s.ctx, attrs...)
+		}
 
 		// Report the job as finished
 		err = s.jobService.FinishJobExecution(s.ctx, job, startTime, stopTime, err)
