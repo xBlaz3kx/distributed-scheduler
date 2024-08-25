@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/GLCharge/otelzap"
-	"github.com/ardanlabs/conf/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	devxCfg "github.com/xBlaz3kx/DevX/configuration"
@@ -26,34 +23,38 @@ import (
 	"go.uber.org/zap"
 )
 
-var build = "develop"
+const serviceName = "runner"
 
 var serviceInfo = observability.ServiceInfo{
-	Name:    "runner",
-	Version: build,
+	Name:    serviceName,
+	Version: "0.1.2",
 }
 
 type config struct {
-	conf.Version
-	Web struct {
-		ReadTimeout     time.Duration `conf:"default:5s"`
-		WriteTimeout    time.Duration `conf:"default:10s"`
-		IdleTimeout     time.Duration `conf:"default:120s"`
-		ShutdownTimeout time.Duration `conf:"default:20s"`
-		APIHost         string        `conf:"default:0.0.0.0:8000"`
-	}
-	DB                database.Config
-	ID                string        `conf:"default:instance1"`
-	Interval          time.Duration `conf:"default:10s"`
-	MaxConcurrentJobs int           `conf:"default:100"`
-	MaxJobLockTime    time.Duration `conf:"default:1m"`
+	Observability        observability.Config        `mapstructure:"observability" yaml:"observability"`
+	Http                 devxHttp.Configuration      `mapstructure:"http" yaml:"http"`
+	DB                   database.Config             `mapstructure:"db" yaml:"db"`
+	ID                   string                      `conf:"default:instance1" yaml:"id"`
+	JobExecutionSettings runner.JobExecutionSettings `mapstructure:"job_execution_settings" yaml:"jobExecutionSettings"`
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "runner",
 	Short: "Scheduler runner",
 	PreRun: func(cmd *cobra.Command, args []string) {
+		devxCfg.SetupEnv(serviceName)
+		devxCfg.SetDefaults(serviceName)
+
 		viper.SetDefault("storage.encryption.key", "ishouldreallybechanged")
+		viper.SetDefault("db.disable_tls", true)
+		viper.SetDefault("db.max_open_conns", 1)
+		viper.SetDefault("db.max_idle_conns", 10)
+		viper.SetDefault("observability.logging.level", observability.LogLevelInfo)
+
+		viper.SetDefault("job_execution_settings.max_concurrent_jobs", 100)
+		viper.SetDefault("job_execution_settings.interval", time.Second*10)
+		viper.SetDefault("job_execution_settings.max_job_lock_time", time.Minute)
+
 		devxCfg.InitConfig("", "./config", ".")
 
 		postgres.SetEncryptor(security.NewEncryptorFromEnv())
@@ -64,7 +65,6 @@ var rootCmd = &cobra.Command{
 func main() {
 	cobra.OnInitialize(func() {
 		logger.SetupLogging()
-		devxCfg.SetupEnv("runner")
 	})
 	err := rootCmd.Execute()
 	if err != nil {
@@ -73,48 +73,28 @@ func main() {
 }
 
 func runCmd(cmd *cobra.Command, args []string) {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	defer cancel()
 
-	obsConfig := observability.Config{}
-	obs, err := observability.NewObservability(ctx, serviceInfo, obsConfig)
+	// Read the configuration
+	cfg := &config{}
+	devxCfg.GetConfiguration(viper.GetViper(), cfg)
+
+	obs, err := observability.NewObservability(ctx, serviceInfo, cfg.Observability)
 	if err != nil {
 		otelzap.L().Fatal("failed to initialize observability", zap.Error(err))
 	}
 
 	log := obs.Log()
 
-	// config
-	cfg := config{
-		Version: conf.Version{
-			Build: build,
-			Desc:  "copyright information here",
-		},
-	}
-
-	const prefix = "RUNNER"
-	help, err := conf.Parse(prefix, &cfg)
-	if err != nil {
-		if errors.Is(err, conf.ErrHelpWanted) {
-			fmt.Println(help)
-			return
-		}
-		return
-	}
-
 	// App Starting
-	log.Info("starting service", zap.String("version", build))
+	log.Info("Starting the runner", zap.String("version", serviceInfo.Version))
 	defer log.Info("shutdown complete")
 
-	out, err := conf.String(&cfg)
-	if err != nil {
-		log.Fatal("parsing config", zap.Error(err))
-	}
-
-	log.Info("Using config", zap.Any("config", out))
+	log.Info("Using config", zap.Any("config", cfg))
 
 	// Database
-	log.Info("startup", zap.String("status", "initializing database support"), zap.String("host", cfg.DB.Host))
+	log.Info("Connecting to the database", zap.String("host", cfg.DB.Host))
 	db, err := database.Open(database.Config{
 		User:         cfg.DB.User,
 		Password:     cfg.DB.Password,
@@ -127,8 +107,9 @@ func runCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal("Unable to establish DB connection", zap.Error(err))
 	}
+
 	defer func() {
-		log.Info("closing database connection")
+		log.Info("Closing the database connection")
 		_ = db.Close()
 	}()
 
@@ -142,19 +123,17 @@ func runCmd(cmd *cobra.Command, args []string) {
 	executorFactory := executor.NewFactory(&http.Client{Timeout: 30 * time.Second})
 
 	runner := runner.New(runner.Config{
-		JobService:        jobService,
-		Log:               log,
-		ExecutorFactory:   executorFactory,
-		InstanceId:        cfg.ID,
-		Interval:          cfg.Interval,
-		MaxConcurrentJobs: cfg.MaxConcurrentJobs,
-		JobLockDuration:   cfg.MaxJobLockTime,
+		JobService:      jobService,
+		Log:             log,
+		ExecutorFactory: executorFactory,
+		InstanceId:      cfg.ID,
+		JobExecution:    cfg.JobExecutionSettings,
 	})
 	runner.Start()
 
-	httpServer := devxHttp.NewServer(devxHttp.Configuration{Address: cfg.Web.APIHost}, observability.NewNoopObservability())
+	httpServer := devxHttp.NewServer(cfg.Http, observability.NewNoopObservability())
 	go func() {
-		log.Info("Started HTTP server", zap.String("host", cfg.Web.APIHost))
+		log.Info("Started HTTP server", zap.String("address", cfg.Http.Address))
 		databaseCheck := database.NewHealthChecker(db)
 		httpServer.Run(databaseCheck)
 	}()
@@ -162,13 +141,12 @@ func runCmd(cmd *cobra.Command, args []string) {
 	//nolint:all
 	select {
 	case _ = <-ctx.Done():
-		log.Info("shutdown", zap.String("status", "shutdown started"))
+		log.Info("Shutting down the runner")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		// stop the runner
 		runner.Stop(ctx)
-		log.Info("shutdown", zap.String("status", "shutdown complete"))
 	}
 }

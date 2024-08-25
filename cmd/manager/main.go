@@ -2,14 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/GLCharge/otelzap"
-	"github.com/ardanlabs/conf/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	devxCfg "github.com/xBlaz3kx/DevX/configuration"
@@ -23,24 +19,18 @@ import (
 	"go.uber.org/zap"
 )
 
-var build = "develop"
+const serviceName = "manager"
 
 var serviceInfo = observability.ServiceInfo{
-	Name:    "manager",
-	Version: build,
+	Name:    serviceName,
+	Version: "0.1.2",
 }
 
 type config struct {
-	conf.Version
-	Web struct {
-		ReadTimeout     time.Duration `conf:"default:5s"`
-		WriteTimeout    time.Duration `conf:"default:10s"`
-		IdleTimeout     time.Duration `conf:"default:120s"`
-		ShutdownTimeout time.Duration `conf:"default:20s"`
-		APIHost         string        `conf:"default:0.0.0.0:8000"`
-	}
-	DB      database.Config
-	OpenAPI struct {
+	Observability observability.Config   `mapstructure:"observability" yaml:"observability"`
+	Http          devxHttp.Configuration `mapstructure:"http" yaml:"http"`
+	DB            database.Config        `mapstructure:"db" yaml:"db"`
+	OpenAPI       struct {
 		Scheme string `conf:"default:http"`
 		Enable bool   `conf:"default:true"`
 		Host   string `conf:"default:localhost:8000"`
@@ -51,7 +41,15 @@ var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "Scheduler manager",
 	PreRun: func(cmd *cobra.Command, args []string) {
+		devxCfg.SetupEnv(serviceName)
+		devxCfg.SetDefaults(serviceName)
+
 		viper.SetDefault("storage.encryption.key", "ishouldreallybechanged")
+		viper.SetDefault("db.disable_tls", true)
+		viper.SetDefault("db.max_open_conns", 1)
+		viper.SetDefault("db.max_idle_conns", 10)
+		viper.SetDefault("observability.logging.level", observability.LogLevelInfo)
+
 		devxCfg.InitConfig("", "./config", ".")
 
 		postgres.SetEncryptor(security.NewEncryptorFromEnv())
@@ -62,7 +60,6 @@ var rootCmd = &cobra.Command{
 func main() {
 	cobra.OnInitialize(func() {
 		logger.SetupLogging()
-		devxCfg.SetupEnv("manager")
 	})
 	err := rootCmd.Execute()
 	if err != nil {
@@ -71,48 +68,27 @@ func main() {
 }
 
 func runCmd(cmd *cobra.Command, args []string) {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	defer cancel()
 
-	obsConfig := observability.Config{}
-	obs, err := observability.NewObservability(ctx, serviceInfo, obsConfig)
+	// Configuration
+	cfg := &config{}
+	devxCfg.GetConfiguration(viper.GetViper(), cfg)
+
+	// Setup observability
+	obs, err := observability.NewObservability(ctx, serviceInfo, cfg.Observability)
 	if err != nil {
 		otelzap.L().Fatal("failed to initialize observability", zap.Error(err))
 	}
 
 	log := obs.Log()
 
-	// Configuration
-	cfg := config{
-		Version: conf.Version{
-			Build: build,
-			Desc:  "copyright information here",
-		},
-	}
-
-	const prefix = "MANAGER"
-	help, err := conf.Parse(prefix, &cfg)
-	if err != nil {
-		if errors.Is(err, conf.ErrHelpWanted) {
-			fmt.Println(help)
-			return
-		}
-		return
-	}
-
 	// App Starting
-	log.Info("starting service", zap.String("version", build))
+	log.Info("Starting the manager", zap.String("version", serviceInfo.Version), zap.Any("config", cfg))
 	defer log.Info("shutdown complete")
 
-	out, err := conf.String(&cfg)
-	if err != nil {
-		return
-	}
-
-	log.Info("startup", zap.String("config", out))
-
 	// Database Support
-	log.Info("startup", zap.String("status", "initializing database support"), zap.String("host", cfg.DB.Host))
+	log.Info("Connecting to the database", zap.String("host", cfg.DB.Host))
 	db, err := database.Open(database.Config{
 		User:         cfg.DB.User,
 		Password:     cfg.DB.Password,
@@ -123,17 +99,15 @@ func runCmd(cmd *cobra.Command, args []string) {
 		DisableTLS:   cfg.DB.DisableTLS,
 	})
 	if err != nil {
-		return
+		log.Fatal("failed to connect to the database", zap.Error(err))
 	}
 
 	defer func() {
-		log.Info("shutdown", zap.String("status", "stopping database support"), zap.String("host", cfg.DB.Host))
+		log.Info("Closing the database connection")
 		_ = db.Close()
 	}()
 
-	httpCfg := devxHttp.Configuration{Address: cfg.Web.APIHost}
-	httpServer := devxHttp.NewServer(httpCfg, obs)
-
+	httpServer := devxHttp.NewServer(cfg.Http, obs)
 	api.Api(httpServer.Router(), api.APIMuxConfig{
 		Log: log,
 		DB:  db,
@@ -145,18 +119,12 @@ func runCmd(cmd *cobra.Command, args []string) {
 	})
 
 	go func() {
-		log.Info("Starting HTTP server", zap.String("host", httpCfg.Address))
+		log.Info("Starting HTTP server", zap.String("host", cfg.Http.Address))
 		databaseCheck := database.NewHealthChecker(db)
 		httpServer.Run(databaseCheck)
 	}()
 
-	// Start API Service
-	log.Info("startup", zap.String("status", "initializing Management API support"))
-
 	// Shutdown
-	select {
-	case sig := <-ctx.Done():
-		log.Info("shutdown", zap.String("status", "shutdown started"), zap.Any("signal", sig))
-		defer log.Info("shutdown", zap.String("status", "shutdown complete"), zap.Any("signal", sig))
-	}
+	<-ctx.Done()
+	log.Info("Shutting down the manager")
 }
