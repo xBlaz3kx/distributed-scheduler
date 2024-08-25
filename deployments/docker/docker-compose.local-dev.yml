@@ -6,8 +6,8 @@ services:
     depends_on:
       - postgres
     build:
-      context: .
-      dockerfile: build/manager/Dockerfile
+      context: ../..
+      dockerfile: ./build/manager/Dockerfile
     command:
       - "/app/tooling"
       - "migrate"
@@ -18,8 +18,8 @@ services:
 
   manager:
     build:
-      context: .
-      dockerfile: build/manager/Dockerfile
+      context: ../..
+      dockerfile: ./build/manager/Dockerfile
     container_name: manager
     restart: always
     ports:
@@ -36,8 +36,8 @@ services:
 
   runner:
     build:
-      context: .
-      dockerfile: build/runner/Dockerfile
+      context: ../..
+      dockerfile: ./build/runner/Dockerfile
     container_name: runner
     restart: always
     environment:
