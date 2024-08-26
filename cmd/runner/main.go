@@ -16,6 +16,7 @@ import (
 	"github.com/xBlaz3kx/distributed-scheduler/internal/executor"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/database"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/logger"
+	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/metrics"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/pkg/security"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/runner"
 	"github.com/xBlaz3kx/distributed-scheduler/internal/service/job"
@@ -129,6 +130,7 @@ func runCmd(cmd *cobra.Command, args []string) {
 
 	runner := runner.New(runner.Config{
 		JobService:      jobService,
+		Metrics:           metrics.NewRunnerMetrics(cfg.Observability.Metrics),
 		Log:             log,
 		ExecutorFactory: executorFactory,
 		InstanceId:      cfg.ID,
@@ -136,7 +138,7 @@ func runCmd(cmd *cobra.Command, args []string) {
 	})
 	runner.Start()
 
-	httpServer := devxHttp.NewServer(cfg.Http, observability.NewNoopObservability())
+	httpServer := devxHttp.NewServer(cfg.Http, obs)
 	go func() {
 		log.Info("Started HTTP server", zap.String("address", cfg.Http.Address))
 		databaseCheck := database.NewHealthChecker(db)

@@ -26,12 +26,12 @@ run/runner: dev/up
 .PHONY: dev/up
 dev/up:
 	@echo "Starting dev environment..."
-	@docker compose -f docker-compose.dev.yml up -d
+	@docker compose -f ./deployments/dockerdocker-compose.dev.yml up -d
 
 .PHONY: dev/down
 dev/down:
 	@echo "Stopping dev environment..."
-	@docker compose -f docker-compose.dev.yml down
+	@docker compose -f ./deployments/docker/docker-compose.dev.yml down
 
 .PHONY: test
 test:
