@@ -84,12 +84,14 @@ func createRunnerWithMockExecutor(interval time.Duration, maxConcurrentJobs int,
 	logger, _ := zap.NewDevelopment()
 
 	return New(Config{
-		JobService:        jobService,
-		ExecutorFactory:   executorFactory,
-		Log:               otelzap.New(logger),
-		InstanceId:        "test",
-		Interval:          interval,
-		MaxConcurrentJobs: maxConcurrentJobs,
+		JobService:      jobService,
+		ExecutorFactory: executorFactory,
+		Log:             otelzap.New(logger),
+		InstanceId:      "test",
+		JobExecution: JobExecutionSettings{
+			Interval:          interval,
+			MaxConcurrentJobs: maxConcurrentJobs,
+		},
 	})
 }
 

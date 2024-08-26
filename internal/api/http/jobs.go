@@ -205,7 +205,7 @@ func (j *Jobs) ListJobs() gin.HandlerFunc {
 		}
 
 		// Remove credentials from the jobs
-		for i, _ := range jobs {
+		for i := range jobs {
 			jobs[i].RemoveCredentials()
 		}
 

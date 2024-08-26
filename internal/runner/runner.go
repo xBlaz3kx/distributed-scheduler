@@ -55,9 +55,13 @@ type Config struct {
 	Log             *otelzap.Logger
 	InstanceId      string
 
-	Interval          time.Duration
-	MaxConcurrentJobs int
-	JobLockDuration   time.Duration
+	JobExecution JobExecutionSettings
+}
+
+type JobExecutionSettings struct {
+	Interval          time.Duration `conf:"default:10s" mapstructure:"interval" json:"interval,omitempty"`
+	MaxConcurrentJobs int           `conf:"default:100" mapstructure:"maxConcurrentJobs" json:"maxConcurrentJobs,omitempty"`
+	MaxJobLockTime    time.Duration `conf:"default:1m" mapstructure:"maxJobLockTime" json:"maxJobLockTime,omitempty"`
 }
 
 func New(cfg Config) *Runner {
@@ -67,13 +71,13 @@ func New(cfg Config) *Runner {
 		jobService:        cfg.JobService,
 		instanceId:        cfg.InstanceId,
 		log:               cfg.Log,
-		ticker:            time.NewTicker(cfg.Interval),
+		ticker:            time.NewTicker(cfg.JobExecution.Interval),
 		ctx:               ctx,
 		executorFactory:   cfg.ExecutorFactory,
 		cancel:            cancel,
-		jobSemaphore:      make(chan struct{}, cfg.MaxConcurrentJobs),
-		maxConcurrentJobs: cfg.MaxConcurrentJobs,
-		jobLockDuration:   cfg.JobLockDuration,
+		jobSemaphore:      make(chan struct{}, cfg.JobExecution.MaxConcurrentJobs),
+		maxConcurrentJobs: cfg.JobExecution.MaxConcurrentJobs,
+		jobLockDuration:   cfg.JobExecution.MaxJobLockTime,
 	}
 
 	s.stopWg.Add(1)
