@@ -31,9 +31,10 @@ services:
       - MANAGER_DB_NAME=scheduler
       - MANAGER_DB_PASSWORD=scheduler
       - MANAGER_DB_DISABLETLS=true
+      - MANAGER_HTTP_ADDRESS=0.0.0.0:8000
       - MANAGER_STORAGE_ENCRYPTION_KEY=ishouldbechanged
-    #volumes:
-    #  - ./cmd/manager/config.yaml:/app/config.yaml
+    volumes:
+      - ./config/manager.yaml:/app/config.yaml
     depends_on:
       - postgres
       - migration
@@ -44,8 +45,8 @@ services:
       dockerfile: build/runner/Dockerfile
     container_name: runner
     restart: always
-    #volumes:
-    #  - ./cmd/runner/config.yaml:/app/config.yaml
+    volumes:
+      - ./config/runner.yaml:/app/config.yaml
     environment:
       - RUNNER_OBSERVABILITY_LOG_LEVEL=info
       - RUNNER_DB_HOST=postgres:5432
@@ -53,6 +54,7 @@ services:
       - RUNNER_DB_PASSWORD=scheduler
       - RUNNER_DB_NAME=scheduler
       - RUNNER_DB_DISABLETLS=true
+      - RUNNER_HTTP_ADDRESS=0.0.0.0:8000
       - RUNNER_STORAGE_ENCRYPTION_KEY=ishouldbechanged
     depends_on:
       - postgres
