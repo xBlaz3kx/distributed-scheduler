@@ -34,7 +34,7 @@ services:
       - MANAGER_HTTP_ADDRESS=0.0.0.0:8000
       - MANAGER_STORAGE_ENCRYPTION_KEY=ishouldbechanged
     volumes:
-      - ./config/manager.yaml:/app/config.yaml
+      - ../../config/manager.yaml:/app/config.yaml
     depends_on:
       - postgres
       - migration
@@ -46,7 +46,7 @@ services:
     container_name: runner
     restart: always
     volumes:
-      - ./config/runner.yaml:/app/config.yaml
+      - ../../config/runner.yaml:/app/config.yaml
     environment:
       - RUNNER_OBSERVABILITY_LOG_LEVEL=info
       - RUNNER_DB_HOST=postgres:5432
