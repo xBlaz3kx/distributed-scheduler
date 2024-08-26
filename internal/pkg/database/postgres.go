@@ -11,13 +11,13 @@ import (
 
 // Config is the required properties to use the database.
 type Config struct {
-	User         string `conf:"default:scheduler" mapstructure:"user" yaml:"user"`
-	Password     string `conf:"default:scheduler,mask" mapstructure:"password" yaml:"password"`
-	Host         string `conf:"default:localhost:5436" mapstructure:"host" yaml:"host"`
-	Name         string `conf:"default:scheduler" mapstructure:"name" yaml:"name"`
-	MaxIdleConns int    `conf:"default:3" mapstructure:"max_idle_conns" yaml:"maxIdleConns"`
-	MaxOpenConns int    `conf:"default:2" mapstructure:"max_open_conns" yaml:"maxOpenConns"`
-	DisableTLS   bool   `conf:"default:true" mapstructure:"disable_tls" yaml:"disableTLS"`
+	User         string `mapstructure:"user" yaml:"user" json:"user,omitempty"`
+	Password     string `mapstructure:"password" yaml:"password" json:"password,omitempty"`
+	Host         string `mapstructure:"host" yaml:"host" json:"host,omitempty"`
+	Name         string `mapstructure:"name" yaml:"name" json:"name,omitempty"`
+	MaxIdleConns int    `mapstructure:"maxIdleConns" yaml:"maxIdleConns" json:"maxIdleConns,omitempty"`
+	MaxOpenConns int    `mapstructure:"maxOpenConns" yaml:"maxOpenConns" json:"maxOpenConns,omitempty"`
+	DisableTLS   bool   `mapstructure:"disableTls" yaml:"disableTLS" json:"disableTLS,omitempty"`
 }
 
 // Open knows how to open a database connection based on the configuration.

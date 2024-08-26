@@ -59,9 +59,9 @@ type Config struct {
 }
 
 type JobExecutionSettings struct {
-	Interval          time.Duration `conf:"default:10s" mapstructure:"interval"`
-	MaxConcurrentJobs int           `conf:"default:100" mapstructure:"max_concurrent_jobs"`
-	MaxJobLockTime    time.Duration `conf:"default:1m" mapstructure:"max_job_lock_time"`
+	Interval          time.Duration `conf:"default:10s" mapstructure:"interval" json:"interval,omitempty"`
+	MaxConcurrentJobs int           `conf:"default:100" mapstructure:"maxConcurrentJobs" json:"maxConcurrentJobs,omitempty"`
+	MaxJobLockTime    time.Duration `conf:"default:1m" mapstructure:"maxJobLockTime" json:"maxJobLockTime,omitempty"`
 }
 
 func New(cfg Config) *Runner {

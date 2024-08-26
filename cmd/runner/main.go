@@ -30,42 +30,47 @@ var serviceInfo = observability.ServiceInfo{
 	Version: "0.1.2",
 }
 
+var configFilePath string
+
 type config struct {
-	Observability        observability.Config        `mapstructure:"observability" yaml:"observability"`
-	Http                 devxHttp.Configuration      `mapstructure:"http" yaml:"http"`
-	DB                   database.Config             `mapstructure:"db" yaml:"db"`
-	ID                   string                      `conf:"default:instance1" yaml:"id"`
-	JobExecutionSettings runner.JobExecutionSettings `mapstructure:"job_execution_settings" yaml:"jobExecutionSettings"`
+	Observability        observability.Config        `mapstructure:"observability" yaml:"observability" json:"observability"`
+	Http                 devxHttp.Configuration      `mapstructure:"http" yaml:"http" json:"http"`
+	DB                   database.Config             `mapstructure:"db" yaml:"db" json:"db"`
+	ID                   string                      `mapstructure:"id" yaml:"id" json:"id,omitempty"`
+	JobExecutionSettings runner.JobExecutionSettings `mapstructure:"jobExecutionSettings" yaml:"jobExecutionSettings" json:"jobExecutionSettings"`
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "runner",
 	Short: "Scheduler runner",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		devxCfg.SetupEnv(serviceName)
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		devxCfg.SetDefaults(serviceName)
+		devxCfg.SetupEnv(serviceName)
 
 		viper.SetDefault("storage.encryption.key", "ishouldreallybechanged")
-		viper.SetDefault("db.disable_tls", true)
-		viper.SetDefault("db.max_open_conns", 1)
-		viper.SetDefault("db.max_idle_conns", 10)
+		viper.SetDefault("db.disableTls", true)
+		viper.SetDefault("db.maxOpenConns", 1)
+		viper.SetDefault("db.maxIdleConns", 10)
 		viper.SetDefault("observability.logging.level", observability.LogLevelInfo)
 
-		viper.SetDefault("job_execution_settings.max_concurrent_jobs", 100)
-		viper.SetDefault("job_execution_settings.interval", time.Second*10)
-		viper.SetDefault("job_execution_settings.max_job_lock_time", time.Minute)
+		viper.SetDefault("jobExecutionSettings.maxConcurrentJobs", 100)
+		viper.SetDefault("jobExecutionSettings.interval", time.Second*10)
+		viper.SetDefault("jobExecutionSettings.maxJobLockTime", time.Minute)
 
-		devxCfg.InitConfig("", "./config", ".")
+		devxCfg.InitConfig(configFilePath, "./config", ".")
 
 		postgres.SetEncryptor(security.NewEncryptorFromEnv())
 	},
 	Run: runCmd,
 }
 
+func init() {
+	rootCmd.PersistentFlags().StringVar(&configFilePath, "config", "", "config file (default is $HOME/.config/runner.yaml)")
+	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+}
+
 func main() {
-	cobra.OnInitialize(func() {
-		logger.SetupLogging()
-	})
+	cobra.OnInitialize(logger.SetupLogging)
 	err := rootCmd.Execute()
 	if err != nil {
 		panic(err)

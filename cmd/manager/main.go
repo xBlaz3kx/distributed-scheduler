@@ -26,23 +26,25 @@ var serviceInfo = observability.ServiceInfo{
 	Version: "0.1.2",
 }
 
+var configFilePath string
+
 type config struct {
-	Observability observability.Config   `mapstructure:"observability" yaml:"observability"`
-	Http          devxHttp.Configuration `mapstructure:"http" yaml:"http"`
-	DB            database.Config        `mapstructure:"db" yaml:"db"`
+	Observability observability.Config   `mapstructure:"observability" yaml:"observability" json:"observability"`
+	Http          devxHttp.Configuration `mapstructure:"http" yaml:"http" json:"http"`
+	DB            database.Config        `mapstructure:"db" yaml:"db" json:"db"`
 	OpenAPI       struct {
-		Scheme string `conf:"default:http"`
-		Enable bool   `conf:"default:true"`
-		Host   string `conf:"default:localhost:8000"`
-	}
+		Scheme string `conf:"default:http" json:"scheme,omitempty"`
+		Enable bool   `conf:"default:true" json:"enable,omitempty"`
+		Host   string `conf:"default:localhost:8000" json:"host,omitempty"`
+	} `json:"openAPI"`
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "Scheduler manager",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		devxCfg.SetupEnv(serviceName)
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		devxCfg.SetDefaults(serviceName)
+		devxCfg.SetupEnv(serviceName)
 
 		viper.SetDefault("storage.encryption.key", "ishouldreallybechanged")
 		viper.SetDefault("db.disable_tls", true)
@@ -57,10 +59,13 @@ var rootCmd = &cobra.Command{
 	Run: runCmd,
 }
 
+func init() {
+	rootCmd.PersistentFlags().StringVar(&configFilePath, "config", "", "config file (default is $HOME/.config/runner.yaml)")
+	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+}
+
 func main() {
-	cobra.OnInitialize(func() {
-		logger.SetupLogging()
-	})
+	cobra.OnInitialize(logger.SetupLogging)
 	err := rootCmd.Execute()
 	if err != nil {
 		panic(err)
