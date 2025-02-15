@@ -4,6 +4,10 @@ Welcome to the Distributed Scheduler repository!
 This system, consisting of a Management API 🛠️ and a Runner service 🏃‍♀️, allows you to easily schedule and manage jobs
 that execute at specified times in the future.
 
+# Note: 
+
+This project has been moved to another [repository](https://github.com/TimeSnap/distributed-scheduler). 
+
 ## Features
 
 - **Job Scheduling**: Schedule jobs to run at specific times in the future.
